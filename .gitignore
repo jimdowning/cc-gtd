@@ -6,3 +6,10 @@ inbox.md
 projects.md
 someday-maybe.md
 waiting-for.md
+
+# User-specific files (not shared with other users of this GTD codebase)
+*.local.md
+*.local.json
+
+# Cache files
+.claude/cache/
