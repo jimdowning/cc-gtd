@@ -1,0 +1,13 @@
+{
+  "name": "gmail-gtd",
+  "version": "1.0.0",
+  "description": "Gmail GTD capture integration - scan and clear labeled emails via IMAP",
+  "main": "index.js",
+  "scripts": {
+    "scan": "node index.js scan",
+    "clear": "node index.js clear"
+  },
+  "dependencies": {
+    "imapflow": "^1.0.0"
+  }
+}

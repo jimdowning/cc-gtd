@@ -7,6 +7,115 @@ Quickly capture thoughts, ideas, and tasks. Uses AI to auto-process obvious sing
 \capture [item]
 ```
 
+## Source: Obsidian Journal
+
+When run without arguments, capture also scans Obsidian daily notes for incomplete checkbox items.
+
+### Obsidian Integration
+
+Uses MCP tools from obsidian-mcp-tools:
+
+1. **List recent daily notes**
+   - Tool: `list_vault_files` with directory `Journal/`
+   - Filenames are always `YYYY-MM-DD.md`
+   - Compute the date 7 days ago and only select files whose filename date is within the last 7 days
+   - Ignore subdirectories (e.g. `2024/`, `2025/`) and any file whose name doesn't match `YYYY-MM-DD.md`
+
+2. **Read each matching note**
+   - Tool: `get_vault_file` for each daily note from the last 7 days only
+   - Parse for incomplete checkboxes: `- [ ] task text`
+
+3. **Present to user**
+   - Show found incomplete items grouped by date
+   - User confirms which to capture as tasks
+
+4. **Process confirmed items**
+   - Route through standard capture analysis
+   - Optionally mark as captured in Obsidian (update to `- [x]`)
+
+### Example Flow
+
+```
+/capture
+-> Scanning Obsidian journal...
+-> Found 3 incomplete items:
+
+  2026-01-26.md:
+  - [ ] Email response to client
+  - [ ] Review PR #123
+
+  2026-01-25.md:
+  - [ ] Follow up on invoice
+
+-> [Select items to capture or press Enter for all]
+```
+
+See `integrations/adapters/notes/obsidian.md` for MCP tool details.
+
+## Source: Gmail Labeled Emails
+
+When run without arguments, capture also scans Gmail accounts configured as note sources in `integrations/config.md` for emails labeled `gtd`.
+
+### Gmail Integration
+
+Uses the `gmail-gtd` Node.js CLI tool at `integrations/scripts/gmail-gtd/index.js`:
+
+1. **Scan each configured Gmail account**
+   - For each note source with `type: gmail` in `integrations/config.md`, run:
+   ```bash
+   node integrations/scripts/gmail-gtd/index.js scan <account-email>
+   ```
+   - Parses JSON output containing conversations grouped by subject, with sender, date, message count, UIDs, and link
+
+2. **Present to user**
+   - Show found conversations grouped by account
+   - Format: `"Subject" from Sender (N messages, Date) — [Link](url)`
+   - User selects which conversations to capture as tasks
+
+3. **Process confirmed items**
+   - Mint a task ID for each selected conversation
+   - Route through standard capture analysis (determine context/project, select provider)
+   - Task description includes `[Email](link)` for clickback to the original Gmail thread
+
+4. **Clear label from captured conversations**
+   - After tasks are confirmed and created, remove the `gtd` label:
+   ```bash
+   node integrations/scripts/gmail-gtd/index.js clear <account-email> <uid> [uid...]
+   ```
+   - Pass all `uids` from each captured conversation
+
+### Example Flow
+
+```
+/capture
+-> Scanning Obsidian journal...
+-> Found 2 incomplete items
+
+-> Scanning Gmail (user@example.com)...
+-> Found 2 labeled emails:
+
+  Gmail (user@example.com):
+  1. "SDK delivery timeline" from Alice (3 messages, Jan 27)
+  2. "Invoice #4521" from billing@vendor.com (1 message, Jan 26)
+
+-> [Select items to capture or press Enter for all]
+
+-> Capturing "Re: SDK delivery timeline"...
+   [a9f3q] Follow up on SDK delivery timeline [Email](https://mail.google.com/...)
+   → Context: @work-code → trello-software
+
+-> Clearing 'gtd' label from captured emails...
+-> Done. 1 email captured, label cleared.
+```
+
+### Error Handling
+
+- **No config/App Password:** Skip Gmail source, show warning with setup instructions
+- **IMAP connection error:** Skip Gmail source, continue with other capture sources
+- **Empty results:** Report "No labeled emails found" and continue
+
+See `integrations/adapters/notes/gmail.md` for full adapter details.
+
 ## Smart Processing
 
 The command automatically processes items when they are:

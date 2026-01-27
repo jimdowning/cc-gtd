@@ -41,7 +41,7 @@ Templates for tasks that repeat on a schedule. The `/daily` and `/weekly` comman
 - **provider**: trello-personal
 - **list**: This Week
 - **due_offset**: +11d
-- **last_created**:
+- **last_created**: 2026-01-14
 
 ### pay-amex
 - **task**: Pay Amex
@@ -49,7 +49,7 @@ Templates for tasks that repeat on a schedule. The `/daily` and `/weekly` comman
 - **provider**: trello-personal
 - **list**: This Week
 - **due_offset**: +7d
-- **last_created**:
+- **last_created**: 2026-01-27 (skipped - already paid)
 
 ### slt-update
 - **task**: SLT update
@@ -57,7 +57,7 @@ Templates for tasks that repeat on a schedule. The `/daily` and `/weekly` comman
 - **provider**: trello-personal
 - **list**: Today
 - **notes**: Prepare Monday afternoon for Tuesday morning meeting
-- **last_created**:
+- **last_created**: 2026-01-26
 
 ### review-digital-twin-value-prop
 - **task**: Review Digital twin value prop progress
@@ -66,14 +66,14 @@ Templates for tasks that repeat on a schedule. The `/daily` and `/weekly` comman
 - **list**: This Week
 - **notes**: Check progress on digital twin value prop (trello-software backlog). Either make progress or consciously defer.
 - **link**: https://trello.com/c/U2Zpvxb3
-- **last_created**:
+- **last_created**: 2026-01-27
 
 ### book-monthly-planning
 - **task**: Run /book-monthly-planning to ensure next 3 months covered
 - **schedule**: monthly: 1
 - **provider**: local-gtd
 - **notes**: Ensures Monthly Software Planning meetings are booked for the next 3 months around the 2nd Wednesday of each month
-- **last_created**:
+- **last_created**: 2026-01-27 (skipped)
 
 ---
 
