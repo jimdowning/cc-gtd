@@ -30,6 +30,7 @@ Uses MCP tools from obsidian-mcp-tools:
    - User confirms which to capture as tasks
 
 4. **Process confirmed items**
+   - Mint a task ID for each item (see `/mint-id` or use `LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5`)
    - Route through standard capture analysis
    - Optionally mark as captured in Obsidian (update to `- [x]`)
 
@@ -228,6 +229,14 @@ Using `integrations/config.md` routing rules:
 - Use default provider if no match
 
 ### 4. Create Task
+
+**Always mint a task ID first** using `/mint-id` or:
+```bash
+LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5
+```
+
+Include the ID in the task name: `[abc12] Task description`
+
 Using provider's adapter from `integrations/adapters/todo/{{type}}.md`:
 
 **Trello:**
