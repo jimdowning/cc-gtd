@@ -1,151 +1,118 @@
 # /weekly
 
-Review the week's accomplishments and plan for the next week.
-
-## Prerequisites
-
-Ensure context is synced with all providers and calendar.
-Run `/sync` and `/calendar week` commands before proceeding with the review.
+Plan the coming week: surface due dates, carryover, and choose project priorities.
 
 ## Usage
 ```
-\weekly
+/weekly
 ```
 
-Add a new log file for the week in `weekly/` folder with name like `2025-W28.md`
+## Prerequisites
+
+Run `/review-week` first (or have recent review data). The review surfaces what didn't get done last week, which informs carryover.
 
 ## Process
 
-### 1. Sync All Providers
-Before reviewing, ensure all external providers are in sync:
+### 1. Gather Forward-Looking Context
+
+Collect data for the coming week:
+
+- **Calendar**: Fetch events for the next 7 days from all calendar providers
+- **Due dates**: Pull tasks with due dates in the next 7 days from all todo providers
+- **Carryover**: Read `weekly/YYYY-WNN-review.md` for incomplete items from last week
+- **Active projects**: Scan Trello boards for work packages and their goals/due dates
+
+### 2. Present the Situation
+
+Show the user what's on the horizon:
+
+**Calendar commitments**:
 ```
-/sync
+Mon: 3 meetings (9:30 standup, 14:00 client call, 16:00 1-1)
+Tue: 2 meetings (10:00 sprint planning, 15:00 demo)
+Wed: Light day — 1 meeting
+...
 ```
-This syncs with all configured providers:
-- trello-cyclops (work tasks)
-- asana-personal (personal/family tasks)
-- todoist-main (side projects)
-- local-gtd (local-only tasks)
 
-### 2. Fetch Calendar Overview
-Get the upcoming week's calendar from all providers:
-```
-/calendar week
-```
-This aggregates from:
-- gcal-work (work calendar)
-- gcal-personal (personal calendar)
+**Tasks due this week**:
+- List all tasks with due dates in the next 7 days
+- Group by day or by urgency
+- Include source (trello-software, trello-personal, etc.)
 
-### 3. Review and Plan
-Conduct the weekly review with full visibility across all systems.
+**Carryover from last week**:
+- Items that were planned but not completed
+- "Do you still want to do these this week, or defer/drop?"
 
-## Features
+**Active projects** (from Trello Software Team board):
+- List work package goals with their due dates
+- Highlight any that are past due or due this week
 
-- **Multi-Provider Sync**: Ensures all todo providers are synchronized
-- **Unified Calendar View**: Shows all calendar providers for upcoming week
-- **Interactive Review**: AI-powered review of the week's accomplishments
-  - Add a weekly review section going over last week's accomplishments, areas of improvements, meta trends
-  - Add a section that goes over each active project's `info.md` (progress) and `tasks.md` (next actions) to ensure sync
-  - Add `EDIT` blocks to get feedback from user
-  - Process feedback to update the project's `info.md` and `tasks.md` files
-  - Plan the next week
+### 3. Priority Conversation
 
-## Review Checklist
+This is the core of the skill — a dialogue, not a dump.
 
-### Capture & Process
-- [ ] Process inbox to zero
-- [ ] Check all provider inboxes (Todoist, Trello, Asana)
-- [ ] Sync any stragglers to GTD system
+Ask the user:
 
-### Projects
-- [ ] Review all projects for next actions
-- [ ] Check waiting-for items for follow-ups
-- [ ] Review someday-maybe for activation
-- [ ] Verify provider sync status for each project
+1. "Looking at the calendar, which days have the most space for focused work?"
+2. "Of the items due this week, any that are at risk or need special attention?"
+3. "Which 2-3 projects do you want to make progress on this week?"
+4. "Anything from carryover you want to drop or defer to someday/maybe?"
 
-### Calendar
-- [ ] Review upcoming week across all calendar providers
-- [ ] Identify conflicts between work and personal calendars
-- [ ] Block time for important tasks
+Wait for responses. Discuss trade-offs if needed (e.g., "Tuesday is packed with meetings, probably not a good day for deep work on the SDK").
 
-### Cleanup
-- [ ] Clean up completed items
-- [ ] Archive finished projects
-- [ ] Remove stale tasks
+### 4. Draft the Week Plan
 
-## Provider Sync Summary
-
-Include sync status for each provider:
+Based on the conversation, draft a plan:
 
 ```markdown
-## Provider Status
+# Week Plan - YYYY-WNN
 
-### Todo Providers
-| Provider | Status | Tasks Synced | Notes |
-|----------|--------|--------------|-------|
-| trello-cyclops | ✓ Synced | 15 active | 3 completed this week |
-| asana-personal | ✓ Synced | 8 active | 2 new from Asana |
-| todoist-main | ✓ Synced | 5 active | - |
-| local-gtd | N/A | 12 active | Local only |
+## Focus Projects
+1. [Project/Goal] — what you want to accomplish
+2. [Project/Goal] — what you want to accomplish
+3. [Project/Goal] — what you want to accomplish
 
-### Calendar Providers
-| Provider | Status | Events This Week |
-|----------|--------|------------------|
-| gcal-work | ✓ Connected | 23 events |
-| gcal-personal | ✓ Connected | 8 events |
+## Due This Week
+| Day | Task | Source | Status |
+|-----|------|--------|--------|
+| Mon | [id] Task description | trello-software | |
+| Tue | [id] Task description | trello-personal | |
+| ... | ... | ... | |
+
+## Calendar Shape
+- **Mon**: Heavy meetings, admin only
+- **Tue**: Morning free, afternoon meetings
+- **Wed**: Open — best day for deep work
+- **Thu**: ...
+- **Fri**: ...
+
+## Carryover
+- [id] Task — carrying forward
+- [id] Task — deferred to someday/maybe
+- [id] Task — dropped (reason)
+
+## Notes
+<!-- Anything else from the conversation -->
 ```
 
-## Weekly Review Template
+### 5. Confirm and Save
 
-```markdown
-# Weekly Review - 2025-W28
+Show the draft to the user. Ask if anything needs adjusting.
 
-## This Week's Accomplishments
-<!-- Major completions across all providers -->
+Once confirmed, save to `weekly/YYYY-WNN-plan.md`.
 
-### Work (trello-cyclops)
-- Completed authentication system refactor
-- Shipped feature X to production
+## Output
 
-### Personal (asana-personal)
-- Scheduled annual checkup
-- Finished home improvement project
+- Creates `weekly/YYYY-WNN-plan.md`
+- Informs `/daily` sessions throughout the week
 
-### Side Projects (todoist-main)
-- Published blog post
-- Updated portfolio site
+## Time Awareness
 
-## Provider Sync Status
-<!-- Generated by /sync -->
+Note the current day when running. If it's Wednesday, the "week" is the remaining days plus the following week, or just the following week — ask the user which makes sense.
 
-## Next Week's Focus
-<!-- Key priorities across all providers -->
+## Related Commands
 
-### Work
-- [ ] Complete sprint goals
-- [ ] Prepare quarterly review
-
-### Personal
-- [ ] Doctor appointment follow-up
-- [ ] Plan weekend trip
-
-## Calendar Overview
-<!-- Generated by /calendar week -->
-
-## System Health
-- Inbox items processed: X
-- Projects with next actions: Y/Z
-- Overdue waiting-for items: N
-- Provider sync issues: None
-- System trust level (1-10): 8
-```
-
-## Configuration Reference
-
-See `integrations/config.md` for:
-- All configured providers
-- Routing rules
-- Adding new providers
-
-See `/sync` for todo provider sync details.
-See `/calendar` for calendar aggregation details.
+- `/review-week` — backward-looking reflection (run before this)
+- `/daily` — daily planning informed by weekly focus
+- `/replan` — mid-day adjustments when things change
+- `/calendar` — detailed calendar view

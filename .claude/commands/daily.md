@@ -1,164 +1,137 @@
 # /daily
 
-Create and update today's daily plan with prioritized tasks and time blocks.
-
-## Prerequisites
-
-Ensure context is synced with all providers and calendar before proceeding.
-Run `/sync` and `/calendar` commands before creating the daily plan.
-
-**Optional but recommended:** Run `/triage` first to:
-- Process any inbox items that accumulated overnight
-- Ensure all tasks are clarified and properly routed
-- Pick focus items that inform your Top 3 priorities
+Plan today's work through conversation: surface what matters, agree on priorities, then write the plan.
 
 ## Usage
 ```
-\daily
+/daily
 ```
 
 ## Process
 
-### 1. Check Recurring Tasks
-Before syncing, check `recurring.md` for tasks due today or in the next few days:
-- Parse each template's schedule
-- Compare against `last_created` date
-- If due and not yet created this cycle:
-  1. Create task in specified provider (e.g., Trello card)
-  2. Update `last_created` date in `recurring.md`
-  3. Report what was created
+### 1. Note the Current Time
 
-### 2. Sync All Providers
-After creating recurring task instances, sync with external providers:
-- Run `/sync` to bidirectionally sync with all todo providers
-- Run `/calendar` to fetch today's events from all calendar providers
+Check what time it is. If it's past 10am, acknowledge that the morning is partially gone and only plan remaining time. If it's afternoon, focus on what's realistic for the rest of the day.
 
-### 3. Aggregate Calendar Events
-From all configured calendar providers in `integrations/config.md`:
-- Fetch today's events from each provider (gcal-work, gcal-personal, etc.)
-- Merge into unified view with source labels
-- Example: `[work] 09:00 Standup`, `[personal] 18:00 Dentist`
+### 2. Check for Existing Plan
 
-### 4. Pull Tasks from All Sources
-From GTD system (already synced with providers):
-- Read all active projects' `tasks.md` files
-- Identify high-priority items across all contexts
-- Consider tasks from all providers (Trello, Asana, Todoist, local)
+Read `daily/YYYY-MM-DD.md` if it exists. If there's already a plan for today:
+- This might be a mid-day check-in — consider suggesting `/replan` instead
+- Or the user may want to start fresh — ask which they prefer
 
-### 5. Create Daily Plan
-Build structured plan with:
-- Calendar commitments (fixed time blocks)
-- Available time blocks for task work
-- Task assignments optimized for energy levels
+### 3. Gather Context
 
-## Features
+**Weekly focus**: Read `weekly/YYYY-WNN-plan.md` to get:
+- Focus projects for the week
+- Any due dates flagged for this week
 
-- **Multi-Provider Calendar**: Shows events from all calendar providers with labels
-- **Smart Task Selection**: Pulls high-priority items from all synced providers
-- **Energy Mapping**: Schedules tasks based on optimal energy levels
-- **Time Blocking**: Creates structured focus sessions around calendar commitments
-- **Project Integration**: Reviews all active projects' `info.md` for status and `tasks.md` for next actions
+**Recurring tasks**: Check `recurring.md` for tasks due today:
+- Parse schedules against `last_created` dates
+- If something is due, create it in the specified provider and update `last_created`
+- Report what was created
 
-## Daily Plan Structure
+**Calendar**: Fetch today's events from configured calendar providers (use `--calendar` flag to filter to Jim's calendars only)
+
+**Due today**: Pull tasks with due dates of today from Trello boards
+
+**Candidate tasks**: From the week's focus projects, pull tasks that could be worked on today:
+- Check In Progress items on Software Team board
+- Check cards in focus project work packages
+- Check Today/This Week lists on Personal board
+
+**Yesterday's carryover**: Read yesterday's daily log, note any incomplete items
+
+### 4. Present the Situation
+
+Show the user what's available, don't decide for them:
+
+**Time available**:
+```
+It's 08:15. Your calendar today:
+- 09:30-10:00 Will / Jim
+- 11:30-12:00 Workout Pilot Updates
+- 14:00-14:30 MQTT-Purr
+- 15:30-16:00 Modal Students
+
+Available blocks: 08:15-09:30 (1h15m), 10:00-11:30 (1h30m), 12:00-14:00 (2h), 14:30-15:30 (1h), 16:00+ (wind down)
+```
+
+**Due today**:
+- List any tasks with today's due date
+
+**Weekly focus projects**:
+- Remind what projects were chosen for this week
+- Show candidate tasks from those projects
+
+**Carryover from yesterday**:
+- Items that were planned but not completed
+- "Still want these, or defer?"
+
+**Recurring tasks created**:
+- Note any that were just created
+
+### 5. Priority Conversation
+
+Ask the user:
+
+1. "What's the most important thing to get done today?"
+2. "Any of yesterday's carryover you want to drop or push to later in the week?"
+3. "Anything not listed that's on your mind for today?"
+
+This is a conversation. Wait for responses. Don't assume.
+
+### 6. Draft the Plan
+
+Based on the conversation, draft time blocks that fit the available slots:
 
 ```markdown
-# Daily Log - 2025-06-26
+# Daily Log - YYYY-MM-DD
 
 ## Calendar
-**Source: All providers**
-- `[work]` 09:00-10:00 Team Standup
-- `[work]` 11:00-12:00 Sprint Planning
-- `[personal]` 18:00-19:00 Dentist appointment
 
-## Daily Plan
-**Last Updated:** 09:15
-
-### Top 3 Priorities
-1. [ ] Complete user authentication debugging (trello-cyclops)
-2. [ ] Client presentation preparation (trello-cyclops)
-3. [ ] Schedule dentist follow-up (asana-personal)
-
-### Time Blocks
-- **08:00-09:00** High Energy Block (before standup)
-  - [ ] @work-code: Debug authentication system
-- **10:00-11:00** Deep Work Block
-  - [ ] @work-code: Write unit tests for auth module
-- **14:00-15:30** Focus Block
-  - [ ] @work-computer: Prepare client presentation slides
-- **17:00-18:00** Admin Block (before dentist)
-  - [ ] @home-calls: Schedule dentist follow-up
-  - [ ] @home-computer: Pay utility bills
-
-### Energy Mapping
-- **High Energy (8-11am)**: Complex coding tasks (@work-code)
-- **Medium Energy (11am-3pm)**: Presentations, planning
-- **Low Energy (3-5pm)**: Emails, administrative work, calls
-
-## Work Log
-<!-- Timestamped activities throughout the day -->
-```
-
-## Multi-Provider Calendar View
-
-The calendar section aggregates from all providers:
-
-```markdown
-## Today's Calendar
-
-### Work (gcal-work)
-- 09:00-10:00 Team Standup
-- 11:00-12:00 Sprint Planning
-- 14:00-15:00 Client Call
-
-### Personal (gcal-personal)
-- 18:00-19:00 Dentist appointment
-- 19:30-21:00 Dinner with Sarah
-
-### Merged View
 | Time | Event | Source |
 |------|-------|--------|
-| 09:00 | Team Standup | [work] |
-| 11:00 | Sprint Planning | [work] |
-| 14:00 | Client Call | [work] |
-| 18:00 | Dentist | [personal] |
-| 19:30 | Dinner | [personal] |
+| 09:30 | Will / Jim | [work] |
+| ... | ... | ... |
+
+## Daily Plan
+**Last Updated:** HH:MM
+
+### Top 3 Priorities
+1. [ ] [id] Priority task
+2. [ ] [id] Priority task
+3. [ ] [id] Priority task
+
+### Time Blocks
+- **08:15-09:30** Focus Block
+  - [ ] [id] Task from conversation
+- **10:00-11:30** Deep Work
+  - [ ] [id] Task from conversation
+- ...
+
+### Deferred
+- [id] Task — pushed to tomorrow/later this week
+
+## Work Log
+
 ```
 
-## AI Optimization
+### 7. Confirm and Save
 
-- Analyzes task complexity and energy requirements
-- Suggests optimal scheduling based on typical energy patterns
-- Identifies dependencies and suggests task ordering
-- Flags potential scheduling conflicts across calendar providers
-- Balances work and personal commitments
+Show the draft. Ask if it looks right.
 
-## Update Behavior
+Once confirmed, save to `daily/YYYY-MM-DD.md`.
 
-- Creates new daily log if none exists for today
-- Updates existing plan while preserving work log entries
-- Suggests plan adjustments based on completed/remaining work
-- Maintains plan history with timestamps
+## Time Awareness
 
-## Integration with Providers
+- Always check the current time before planning
+- Only plan time blocks that haven't passed
+- If it's late in the day, keep it simple — maybe just "what's the one thing to do before end of day?"
+- Acknowledge weekends differently (lighter structure, personal focus)
 
-Tasks in daily plan link back to their source provider:
-- Trello tasks can be opened in Trello
-- Asana tasks can be opened in Asana
-- Todoist tasks can be opened in Todoist
-- Local tasks are GTD-only
+## Related Commands
 
-## Configuration Reference
-
-See `integrations/config.md` for:
-- Calendar provider configuration
-- Todo provider configuration
-- Routing rules
-
-See `recurring.md` for:
-- Recurring task templates
-- Schedule formats (monthly, weekly, daily, etc.)
-- Provider routing for recurring tasks
-
-See `/calendar` command for calendar aggregation details.
-See `/sync` command for todo provider sync details.
-See `/triage` command for inbox processing and work selection.
+- `/weekly` — sets the focus projects that inform daily planning
+- `/replan` — mid-day adjustments when priorities shift
+- `/today` — quick view of current plan without changes
+- `/triage` — process inbox items before planning
