@@ -268,7 +268,7 @@ When in doubt, items go to inbox with timestamp:
 - **GTD**: `- [ ] YYYY-MM-DD HH:MM - [item]` in inbox.md
 - **Provider**: Created in default provider's inbox (if available)
 
-**Next step:** Run `/triage inbox` to process inbox items using the GTD clarify workflow (2-minute rule, project creation, routing).
+**Next step:** Inbox items are processed automatically by the next `/plan-day` or `/plan-week` run.
 
 ## Implementation Notes
 
@@ -289,7 +289,8 @@ See `integrations/adapters/todo/` for:
 - Provider-specific command syntax
 - Context-to-label mappings
 
-See `/triage` command for:
-- Processing inbox items
-- GTD clarify workflow (2-minute rule, project creation)
-- Picking work from available tasks
+See `/plan-day` and `/plan-week` for:
+- Embedded processing pipeline (clarify + organize to inbox zero)
+
+See `/pick` for:
+- Ad-hoc work selection from available tasks

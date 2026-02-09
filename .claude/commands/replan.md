@@ -23,7 +23,7 @@ Check what time it is. Calculate remaining work hours (typically until 17:00-18:
 
 ### 2. Read Current Plan
 
-Load `daily/YYYY-MM-DD.md` and parse:
+Load today's journal note from Obsidian (`Journal/YYYY-MM-DD.md` via `get_vault_file`) and parse:
 - What was planned for today
 - What's been marked done (checked items)
 - What's still open
@@ -94,7 +94,7 @@ Example update:
 
 Show the updated plan. Confirm it makes sense.
 
-Save the updated `daily/YYYY-MM-DD.md`.
+Save the updated plan to Obsidian via `patch_vault_file` on `Journal/YYYY-MM-DD.md`, updating the `# Daily Plan` section. Preserve `# Notes` and `# Daily Review` sections untouched.
 
 ## Quick Mode
 
@@ -110,6 +110,7 @@ Skip the conversation and just:
 
 ## Related Commands
 
-- `/daily` — full morning planning session
+- `/plan-day` — full morning planning session
 - `/today` — view current plan without changes
 - `/capture` — if new items need to be captured first
+- `/review-day` — end-of-day reflection
