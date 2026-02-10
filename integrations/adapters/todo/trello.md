@@ -149,7 +149,48 @@ trello board add-label --board "{{board}}" --name "{{label_name}}" --color "{{co
 
 ## Caching
 
-Trello boards with many cards benefit from local caching to avoid repeated API calls. Cache board data (lists and cards) as JSON files and query locally with `jq`. The system config should specify cache file paths; the adapter refreshes them via `trello-cli` and reads locally for queries.
+Trello boards with many cards benefit from local caching to avoid repeated API calls.
+
+### Cache Location
+
+Store cache files under the active system's cache directory: `systems/<active>/cache/trello/`
+
+For each Trello provider instance, cache two files:
+- `<board-slug>-lists.json` — all lists on the board
+- `<board-slug>-cards.json` — all cards on the board
+- `metadata.json` — fetch timestamp
+
+### Refreshing Cache
+
+```bash
+# Fetch lists and cards for a board
+trello-cli --get-lists "<board-id>" 2>&1 | jq '.data' > systems/<active>/cache/trello/<slug>-lists.json
+trello-cli --get-all-cards "<board-id>" 2>&1 | jq '.data' > systems/<active>/cache/trello/<slug>-cards.json
+
+# Update timestamp
+echo '{"fetched": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"}' > systems/<active>/cache/trello/metadata.json
+```
+
+### When to Refresh
+- At start of a work session (first `/plan-day` or `/sync`)
+- After making changes via trello-cli (creating/moving cards)
+- If cache is >1 hour old
+
+### Common Local Queries
+
+```bash
+# Cards assigned to a specific member
+jq '[.[] | select(.idMembers | contains(["<member-id>"]))]' <cards-cache>.json
+
+# Goal cards with due dates
+jq '[.[] | select(.name | startswith("Goal")) | select(.due)]' <cards-cache>.json
+
+# Cards in a specific list
+jq '[.[] | select(.idList == "<list-id>")]' <cards-cache>.json
+
+# List name lookup
+jq '.[] | select(.id == "<list-id>") | .name' <lists-cache>.json
+```
 
 ## Example Sync Session
 

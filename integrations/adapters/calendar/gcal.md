@@ -190,3 +190,4 @@ GCALCLI_CONFIG={{auth}} gcalcli remind
 - Events are read-only from GTD perspective (create via gcalcli, view in daily plan)
 - Time-specific commitments from calendar inform task scheduling
 - Use calendar provider label in merged views: `[work] 9:00 Standup`
+- **Always** use `--calendar "{{calendar}}"` — shared Google Workspace accounts show all team members' events by default
