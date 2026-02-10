@@ -2,6 +2,12 @@
 
 Ad-hoc work selection: choose what to work on right now using context, time, energy, and priority.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances
+3. Load `systems/<active>/prompts/pick.md` if it exists for system-specific instructions
+
 ## Usage
 ```
 /pick
@@ -20,10 +26,7 @@ Between planned reviews — when you have time and want to choose the most valua
 
 ### 1. Gather Available Tasks
 
-Pull ready tasks from:
-- All active projects' `tasks.md` files
-- Trello boards (Software Team and Personal — use cached data)
-- Filter to incomplete tasks only
+For each todo provider in `systems/<active>/config.md`, load the adapter from `integrations/adapters/todo/<type>.md` and fetch incomplete tasks. Also check local data files in `systems/<active>/data/`.
 
 ### 2. Present Grouped by Context
 
@@ -33,21 +36,18 @@ Show tasks organized by context with provider source:
 Available Tasks by Context:
 
 @work-code:
-  [ ] [x7k2m] Fix authentication bug (trello-software)
-  [ ] [a9f3q] Write unit tests for auth module (trello-software)
-  [ ] [p4w8n] Refactor database queries (trello-software)
+  [ ] [x7k2m] Fix authentication bug (provider-a)
+  [ ] [a9f3q] Write unit tests (provider-a)
 
 @work-computer:
-  [ ] [k3m7j] Prepare client presentation (trello-software)
-  [ ] [r2f9d] Update project documentation (local-gtd)
+  [ ] [k3m7j] Prepare presentation (provider-a)
+  [ ] [r2f9d] Update documentation (local-gtd)
 
 @home-calls:
-  [ ] [w5n8t] Call dentist to schedule cleaning (trello-personal)
-  [ ] [e6h1q] Follow up with insurance company (trello-personal)
+  [ ] [w5n8t] Call dentist (provider-b)
 
 @errands:
   [ ] [b4c2v] Buy groceries (local-gtd)
-  [ ] [g7y3x] Pick up dry cleaning (local-gtd)
 
 Which tasks do you want to focus on? (Enter numbers, e.g., 1,3,5)
 ```
@@ -65,12 +65,12 @@ User picks 1-5 items for current work session:
 
 Selected for this work session:
 
-1. [ ] [x7k2m] Fix authentication bug (@work-code, trello-software)
-2. [ ] [w5n8t] Call dentist to schedule cleaning (@home-calls, trello-personal)
-3. [ ] [k3m7j] Prepare client presentation (@work-computer, trello-software)
+1. [ ] [x7k2m] Fix authentication bug (@work-code, provider-a)
+2. [ ] [w5n8t] Call dentist (@home-calls, provider-b)
+3. [ ] [k3m7j] Prepare presentation (@work-computer, provider-a)
 
 Context switches required: 3
-Estimated providers involved: trello-software, trello-personal
+Estimated providers involved: provider-a, provider-b
 ```
 
 ## AI Guidelines

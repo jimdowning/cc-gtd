@@ -2,6 +2,13 @@
 
 No-op adapter for tasks that don't need external sync. Tasks stay in GTD markdown files only.
 
+## Role
+- **source_type**: managed
+- **capture_signal**: —
+- **completion_signal**: Checkbox marked `[x]` in data files
+- **id_strategy**: minted
+- **primary_storage**: local
+
 ## Purpose
 
 The local adapter is used for:

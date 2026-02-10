@@ -1,6 +1,93 @@
 # Claude Code Project Instructions
 
-This project encodes both a Getting Things Done system, and a specific implementation of a GTD setup along with the data. 
+This project is a shareable GTD engine. System-specific data, provider config, and per-command prompts live in external **system** repos mounted at `systems/<name>/`.
+
+## System Architecture
+
+### What is a System?
+
+A **system** is an independent work context (e.g., a job, personal life, side project) with its own:
+- **Provider config** (`systems/<active>/config.md`) — which Trello boards, calendars, email accounts, etc.
+- **Data files** (`systems/<active>/data/`) — inbox, recurring tasks, someday/maybe, waiting-for, projects
+- **Per-command prompts** (`systems/<active>/prompts/`) — system-specific instructions layered onto commands
+- **Journal** (`systems/<active>/journal/`) — daily and weekly plan/review files
+- **Cache** (`systems/<active>/cache/`) — cached provider data
+
+Each system is a separate git repo, cloned or symlinked into `systems/<name>/`.
+
+### Active System
+
+Commands operate on the **active system**, stored in `.claude/active-system`. Set it with `/system <name>`. If only one system is mounted, it auto-selects.
+
+### How Commands Resolve the Active System
+
+Every command that needs provider config, data files, or system context follows this resolution:
+
+1. Read `.claude/active-system` to get the active system name
+2. Load `systems/<active>/config.md` for provider instances and routing rules
+3. Use `systems/<active>/data/` for GTD data files (inbox, recurring, etc.)
+4. Check `systems/<active>/prompts/<command>.md` for system-specific command instructions — if present, load and follow those additional instructions
+5. Use `systems/<active>/journal/` for daily/weekly plans and reviews
+6. Use `systems/<active>/cache/` for cached provider data
+7. Load adapter from `integrations/adapters/<category>/<type>.md` for provider operations
+
+### Source Role Taxonomy
+
+Each provider adapter declares a **role** that determines how signals are interpreted:
+
+**Capture sources** (our system is primary storage):
+- Examples: Gmail, Obsidian
+- No stable external IDs — we mint task IDs
+- "Captured" signal (e.g., label removed, checkbox marked) means "ingested into GTD", NOT "task done"
+- Task lifecycle lives in our data files
+
+**Managed sources** (external system is primary storage):
+- Examples: Trello, Asana, Todoist
+- Have stable external IDs — we store cross-references
+- "Done" signal (e.g., card moved to Done) means "task done"
+- Task lifecycle lives in the external system
+
+**Read-only sources**:
+- Examples: Google Calendar, icalBuddy
+- Provide context (time commitments) but don't own tasks
+
+See each adapter's `## Role` section for its specific metadata.
+
+### Path Conventions
+
+| What | Path |
+|------|------|
+| Active system name | `.claude/active-system` |
+| System manifest | `systems/<active>/system.md` |
+| Provider config | `systems/<active>/config.md` |
+| Inbox | `systems/<active>/data/inbox.md` |
+| Recurring tasks | `systems/<active>/data/recurring.md` |
+| Someday/Maybe | `systems/<active>/data/someday-maybe.md` |
+| Waiting For | `systems/<active>/data/waiting-for.md` |
+| Projects | `systems/<active>/data/projects.md` |
+| Command prompts | `systems/<active>/prompts/<command>.md` |
+| Daily journal | `systems/<active>/journal/daily/` |
+| Weekly plans | `systems/<active>/journal/weekly/` |
+| Provider cache | `systems/<active>/cache/` |
+| Reference docs | `systems/<active>/reference/` |
+| Adapter docs | `integrations/adapters/<category>/<type>.md` |
+| Config schema | `integrations/config.md` |
+
+### What Goes Where
+
+| Content | Location | Reason |
+|---------|----------|--------|
+| GTD methodology | `CLAUDE.md` | Shared engine |
+| Adapter docs | `integrations/adapters/` | Shared engine |
+| Config schema | `integrations/config.md` | Shared engine |
+| Provider instances | `systems/<name>/config.md` | Per-system |
+| Task data files | `systems/<name>/data/` | Per-system |
+| Journal files | `systems/<name>/journal/` | Per-system |
+| Board structures | `systems/<name>/reference/` | Per-system |
+| Command overrides | `systems/<name>/prompts/` | Per-system |
+| User identity | `CLAUDE.local.md` | User-specific, not system-specific |
+
+
 
 ## GTD Processes
 
@@ -62,7 +149,7 @@ What got done vs. what was planned? Handle undone items. The retrospective half 
 |---------|-------------------------------|-------------------------------|----------|
 | Daily | Process inbox, orient, decide priorities | Gather completions, reflect | `/plan-day`, `/replan` / `/review-day` |
 | Weekly | Process inbox, orient on week, decide focus | Reflect on week, system health | `/plan-week` / `/review-week` |
-| Monthly | Areas of focus, goal alignment | Activate/deactivate projects | `/book-monthly-planning` |
+| Monthly | Areas of focus, goal alignment | Activate/deactivate projects | `/book-recurring` |
 
 **Daily cycle:**
 - Morning: Run processing pipeline + orient + decide. (`/plan-day`)
@@ -104,6 +191,7 @@ Command: `/pick`
 | `/sync` | — | — | Refresh provider data |
 | `/calendar` | — | — | View calendar |
 | `/mint-id` | — | — | Generate task IDs |
+| `/system` | — | — | Manage active system |
 
 (P) = prospective, (R) = retrospective
 

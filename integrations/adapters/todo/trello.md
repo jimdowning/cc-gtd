@@ -2,6 +2,13 @@
 
 Adapter for syncing GTD tasks with Trello boards using the `trello-cli` tool.
 
+## Role
+- **source_type**: managed
+- **capture_signal**: —
+- **completion_signal**: Card moved to Done list or archived
+- **id_strategy**: external
+- **primary_storage**: external
+
 ## Prerequisites
 
 Install trello-cli:

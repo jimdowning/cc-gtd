@@ -2,6 +2,12 @@
 
 End-of-week reflection: what got done, what didn't, and why. Closes the outgoing week.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances
+3. Load `systems/<active>/prompts/review-week.md` if it exists for system-specific instructions
+
 ## Usage
 ```
 /review-week
@@ -19,10 +25,10 @@ Typically Friday afternoon or Sunday evening — whenever you want to close out 
 
 Collect data from the past week:
 
-- **Daily logs**: Read `Journal/YYYY-MM-DD.md` notes from Obsidian (via `get_vault_file`) for the past 7 days
-- **Last week's plan**: Read `weekly/YYYY-WNN-plan.md` if it exists
-- **Provider data**: Refresh Trello cache and check for cards moved to Done this week
-- **Calendar**: What meetings/events happened this week
+- **Daily logs**: Read daily journal notes from the active system's journal for the past 7 days
+- **Last week's plan**: Read `systems/<active>/journal/weekly/YYYY-WNN-plan.md` if it exists
+- **Provider data**: For each todo provider in `systems/<active>/config.md`, refresh cached data and check for tasks completed this week (using adapter procedures)
+- **Calendar**: For each calendar provider, fetch this week's events using the adapter
 
 ### 2. Present the Week's Activity
 
@@ -30,7 +36,7 @@ Show the user a summary:
 
 **Completed items** (grouped by source):
 - Tasks marked done in daily logs
-- Cards moved to Done lists on Trello boards
+- Tasks completed in external providers
 - Any other provider completions
 
 **Planned but incomplete**:
@@ -39,7 +45,7 @@ Show the user a summary:
 - Carryover candidates for next week
 
 **Waiting-for items**:
-- Check Trello "Waiting For" list on personal board
+- Check waiting-for items from configured providers
 - Flag anything that's been waiting more than a week
 
 ### 3. Reflect (Conversational)
@@ -56,7 +62,7 @@ Keep this brief. The goal is to surface insights, not write an essay.
 
 Report on GTD system health:
 
-- **Inbox status**: Are provider inboxes at zero?
+- **Inbox status**: Is the system inbox at zero? Are provider inboxes clear?
 - **Projects with next actions**: How many active projects have a clear next action?
 - **Stale items**: Anything due that was missed? Waiting-for items going stale?
 
@@ -64,17 +70,17 @@ Present as a quick status, not a checklist to work through.
 
 ### 5. Write Review Document
 
-After the conversation, write a weekly summary to `weekly/YYYY-WNN-review.md`:
+After the conversation, write a weekly summary to `systems/<active>/journal/weekly/YYYY-WNN-review.md`:
 
 ```markdown
 # Week Review - YYYY-WNN
 
 ## Completed
-### Work (trello-software)
+### Provider A
 - [task-id] Task description
 - ...
 
-### Personal (trello-personal)
+### Provider B
 - [task-id] Task description
 - ...
 
@@ -93,7 +99,7 @@ After the conversation, write a weekly summary to `weekly/YYYY-WNN-review.md`:
 
 ## Output
 
-- Creates `weekly/YYYY-WNN-review.md`
+- Creates `systems/<active>/journal/weekly/YYYY-WNN-review.md`
 - Next `/plan-week` reads this if it exists to enrich planning context
 
 ## Related Commands

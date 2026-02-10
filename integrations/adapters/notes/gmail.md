@@ -2,6 +2,13 @@
 
 Adapter for capturing tasks from Gmail emails labeled `gtd`. Uses IMAP with a Google App Password — no Cloud project or OAuth setup required.
 
+## Role
+- **source_type**: capture
+- **capture_signal**: `gtd` label removed from email (means ingested into GTD, not task done)
+- **completion_signal**: Tracked in system data files (not in Gmail)
+- **id_strategy**: minted
+- **primary_storage**: local
+
 ## Prerequisites
 
 ### 1. Enable 2-Step Verification

@@ -2,6 +2,13 @@
 
 Adapter for syncing GTD tasks with Asana workspaces and projects.
 
+## Role
+- **source_type**: managed
+- **capture_signal**: —
+- **completion_signal**: Task marked complete in Asana
+- **id_strategy**: external
+- **primary_storage**: external
+
 ## Prerequisites
 
 Install asana CLI or use the API directly:

@@ -2,6 +2,12 @@
 
 Mid-day replanning when priorities shift or unexpected work emerges.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances
+3. Load `systems/<active>/prompts/replan.md` if it exists for system-specific instructions
+
 ## Usage
 ```
 /replan
@@ -23,7 +29,7 @@ Check what time it is. Calculate remaining work hours (typically until 17:00-18:
 
 ### 2. Read Current Plan
 
-Load today's journal note from Obsidian (`Journal/YYYY-MM-DD.md` via `get_vault_file`) and parse:
+Load today's journal note from the active system's journal and parse:
 - What was planned for today
 - What's been marked done (checked items)
 - What's still open
@@ -36,7 +42,7 @@ Show the user where things stand:
 **Time remaining**:
 ```
 It's 14:30. Remaining today:
-- 15:30-16:00 Modal Students (meeting)
+- 15:30-16:00 Meeting
 - ~2.5 hours of work time until 17:00
 ```
 
@@ -76,25 +82,25 @@ Example update:
 
 ### Remaining Today
 - **14:30-15:30** Focus Block
-  - [ ] [8yhe5] Fix EZ-Sag Bitrise — TOP PRIORITY (new)
-- **15:30-16:00** Modal Students
+  - [ ] [8yhe5] Top priority task (new)
+- **15:30-16:00** Meeting
 - **16:00-17:00** Wind down
-  - [ ] [qfo2w] Review ADRs if time
+  - [ ] [qfo2w] Review items if time
 
 ### Pushed to Tomorrow
-- [ ] [l4alt] Atto iOS — deprioritized, will continue tomorrow
+- [ ] [l4alt] Task — deprioritized, will continue tomorrow
 
 ### Morning (completed)
-- [x] [5e1lv] Book 1-1 Will
-- **09:30-10:00** Will / Jim — done
-- **10:00-11:30** Deep work — worked on Atto iOS
+- [x] [5e1lv] Done task
+- **09:30-10:00** Meeting — done
+- **10:00-11:30** Deep work — worked on X
 ```
 
 ### 6. Confirm and Save
 
 Show the updated plan. Confirm it makes sense.
 
-Save the updated plan to Obsidian via `patch_vault_file` on `Journal/YYYY-MM-DD.md`, updating the `# Daily Plan` section. Preserve `# Notes` and `# Daily Review` sections untouched.
+Save the updated plan to the system's journal, updating the `# Daily Plan` section. Preserve `# Notes` and `# Daily Review` sections untouched.
 
 ## Quick Mode
 

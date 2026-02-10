@@ -2,6 +2,12 @@
 
 End-of-day reflection: gather completion signals, compare plan vs. reality, note what to carry forward.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances
+3. Load `systems/<active>/prompts/review-day.md` if it exists for system-specific instructions
+
 ## Usage
 ```
 /review-day
@@ -13,7 +19,7 @@ Explicitly optional — tomorrow's `/plan-day` detects carryover regardless of w
 
 ### 1. Read Today's Plan
 
-Read today's journal note from Obsidian (`Journal/YYYY-MM-DD.md` via `get_vault_file`).
+Read today's journal note from the active system's journal.
 
 If no plan exists, skip to a lightweight "what did you do today?" conversation.
 
@@ -23,8 +29,7 @@ If no plan exists, skip to a lightweight "what did you do today?" conversation.
 - Parse checked `- [x]` vs unchecked `- [ ]` items in the Daily Plan section
 
 **From providers (if cache is fresh):**
-- Trello: cards moved to Done, In Testing, Code Complete, or other progress lists today
-- Any other provider completions visible in cached data
+- For each todo provider in `systems/<active>/config.md`, check for tasks moved to done/completed status today using the adapter's list procedure
 
 ### 3. Present Plan vs. Reality
 
@@ -32,15 +37,15 @@ If no plan exists, skip to a lightweight "what did you do today?" conversation.
 ## Today's Results
 
 Completed:
-- [x] [5e1lv] Book 1-1 Will
-- [x] [8yhe5] Fix EZ-Sag Bitrise
+- [x] [5e1lv] Task A
+- [x] [8yhe5] Task B
 
 Not completed:
-- [ ] [l4alt] Atto iOS testing
-- [ ] [qfo2w] Review ADRs
+- [ ] [l4alt] Task C
+- [ ] [qfo2w] Task D
 
 Not in plan but done:
-- [r3k9m] Responded to SDK delivery email (from Trello movement)
+- [r3k9m] Task E (from provider movement)
 ```
 
 ### 4. Brief Conversation
@@ -53,19 +58,19 @@ Keep this short. This is a quick close-out, not a planning session.
 
 ### 5. Write Daily Review
 
-Append the `# Daily Review` section to today's journal note via `patch_vault_file` on `Journal/YYYY-MM-DD.md`:
+Append the `# Daily Review` section to today's journal note:
 
 ```markdown
 # Daily Review
 
 ## Completed
-- [x] [5e1lv] Book 1-1 Will
-- [x] [8yhe5] Fix EZ-Sag Bitrise
-- [x] [r3k9m] SDK delivery email response (unplanned)
+- [x] [5e1lv] Task A
+- [x] [8yhe5] Task B
+- [x] [r3k9m] Task E (unplanned)
 
 ## Incomplete → Carry Forward
-- [ ] [l4alt] Atto iOS testing
-- [ ] [qfo2w] Review ADRs
+- [ ] [l4alt] Task C
+- [ ] [qfo2w] Task D
 
 ## Notes
 <!-- User's reflections from the conversation -->

@@ -2,6 +2,13 @@
 
 Adapter for syncing GTD tasks with Todoist using the `tod` CLI.
 
+## Role
+- **source_type**: managed
+- **capture_signal**: —
+- **completion_signal**: Task completed in Todoist
+- **id_strategy**: external
+- **primary_storage**: external
+
 ## Prerequisites
 
 Install tod CLI:

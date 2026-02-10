@@ -2,6 +2,13 @@
 
 Adapter for fetching calendar events from macOS Calendar app using `icalBuddy`.
 
+## Role
+- **source_type**: read-only
+- **capture_signal**: —
+- **completion_signal**: —
+- **id_strategy**: —
+- **primary_storage**: external
+
 ## Prerequisites
 
 Install icalBuddy:

@@ -1,14 +1,16 @@
 # Integration Configuration
 
-This file defines provider instances and routing rules for the multi-provider GTD system. When capturing or syncing items, the system determines which provider to use based on these routing rules.
+This file documents the provider schema, routing logic, and serves as a template. Actual provider instances live in each system's `config.md` at `systems/<active>/config.md`.
 
-**Important:** Actual provider instances with real board IDs, email addresses, and list mappings are defined in `integrations/config.local.md` (gitignored). This file documents the schema, routing logic, and serves as a template.
+**Resolution:** Commands read the active system from `.claude/active-system`, then load `systems/<active>/config.md` for provider instances. This file defines the schema those configs follow.
+
+**Migration note:** If `integrations/config.local.md` exists, it is a legacy flat-structure config. System-specific config should be moved to `systems/<name>/config.md`.
 
 ## Routing Logic
 
 When capturing or syncing:
 1. Determine context/project of item
-2. Find matching provider instance by route rules (from `config.local.md`)
+2. Find matching provider instance by route rules (from `systems/<active>/config.md`)
 3. Load adapter for that provider type
 4. Execute operation with instance-specific config
 
@@ -180,8 +182,8 @@ Note sources provide tasks captured organically in other tools (journaling apps,
 
 To add a new provider instance:
 
-1. Add a new section to `integrations/config.local.md` under the appropriate category
-2. Specify the provider type (must match an adapter in `adapters/`)
+1. Add a new section to `systems/<name>/config.md` under the appropriate category
+2. Specify the provider type (must match an adapter in `integrations/adapters/`)
 3. Configure type-specific settings (board, workspace, calendar, etc.)
 4. Define routing rules to determine when this provider is used
-5. For Trello boards, add a reference doc with board structure and list IDs
+5. For Trello boards, add a reference doc in `systems/<name>/reference/`

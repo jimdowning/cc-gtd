@@ -2,6 +2,13 @@
 
 Adapter for reading tasks from Obsidian daily notes using the `obsidian-mcp-tools` MCP server.
 
+## Role
+- **source_type**: capture
+- **capture_signal**: Checkbox marked `[x]` or `#captured` tag added in daily note
+- **completion_signal**: Tracked in system data files (not in Obsidian)
+- **id_strategy**: minted
+- **primary_storage**: local
+
 ## Prerequisites
 
 Configure the Obsidian MCP server:
@@ -40,8 +47,10 @@ Use `list_vault_files` to get files in the Journal folder:
 ```
 Tool: list_vault_files
 Parameters:
-  directory: "Journal/"
+  directory: "Journal"
 ```
+
+**Important:** Do not include a trailing slash — the MCP server returns 404 for paths like `"Journal/"`.
 
 Filter results to recent daily notes by filename pattern `YYYY-MM-DD.md`.
 
