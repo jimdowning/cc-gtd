@@ -12,14 +12,14 @@ Generate unique 5-character alphanumeric identifiers for tasks and items.
 
 ## Generation Method
 
-Use this bash command to generate identifiers:
+Use the bundled script to generate identifiers:
 ```bash
-LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5
+bin/mint-id
 ```
 
 For multiple identifiers:
 ```bash
-for i in {1..N}; do LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5; echo; done
+bin/mint-id N
 ```
 
 ## Identifier Format

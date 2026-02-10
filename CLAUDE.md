@@ -283,7 +283,7 @@ All tasks should be assigned a unique 5-character alphanumeric identifier for ea
 ### Generating Identifiers
 Use `/mint-id` command or:
 ```bash
-LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5
+bin/mint-id
 ```
 
 ### Display Format

@@ -1,0 +1,8 @@
+#!/bin/bash
+# Generate unique 5-character alphanumeric identifiers
+# Usage: mint-id [count]
+count=${1:-1}
+for ((i=0; i<count; i++)); do
+  LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5
+  echo
+done
