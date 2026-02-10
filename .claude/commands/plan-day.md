@@ -38,7 +38,7 @@ For each note source configured in `systems/<active>/config.md`, spawn a Task su
 | Provider type | Sub-agent type | Reason |
 |--------------|----------------|--------|
 | `obsidian-mcp` | `general-purpose` | Needs MCP tools |
-| `gmail` | `Bash` | Runs `node index.js scan` |
+| `gmail` | `Bash` | Runs adapter scan procedure |
 
 Each sub-agent prompt should include: the adapter doc path (`integrations/adapters/notes/<type>.md`), the instance config excerpt from the system config, and instructions to return structured results. Use `model: "haiku"` for all retrieval sub-agents.
 

@@ -14,7 +14,7 @@ CALENDARS=("$@")
 
 if [[ -z "$START_TIME" || -z "$DURATION" || ${#CALENDARS[@]} -eq 0 ]]; then
     echo "Usage: $0 \"YYYY-MM-DD HH:MM\" duration_minutes calendar1 [calendar2 ...]"
-    echo "Example: $0 \"2026-02-11 14:00\" 60 jim.downing@cyclopsmarine.com"
+    echo "Example: $0 \"2026-02-11 14:00\" 60 user@example.com"
     exit 1
 fi
 

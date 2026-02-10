@@ -31,7 +31,7 @@ For each note source configured in `systems/<active>/config.md`, spawn a Task su
 | Provider type | Sub-agent type | Reason |
 |--------------|----------------|--------|
 | `obsidian-mcp` | `general-purpose` | Needs MCP tools |
-| `gmail` | `Bash` | Runs `node index.js scan` |
+| `gmail` | `Bash` | Runs adapter scan procedure |
 
 Each sub-agent prompt should include: the adapter doc path (`integrations/adapters/notes/<type>.md`), the instance config excerpt from the system config, and instructions to return structured results. Use `model: "haiku"` for all retrieval sub-agents.
 
@@ -59,7 +59,7 @@ Delegate external retrieval to parallel Haiku sub-agents. Local file reads stay 
 
 - **Calendar** (`Bash` sub-agent): For each calendar provider, include the adapter path (`integrations/adapters/calendar/<type>.md`) and instance config (calendar name, account, filter flags). Sub-agent fetches events for the next 7 days and returns structured text.
 - **Due this week** (`Bash` sub-agent per todo provider): For each todo provider, include the adapter path and instance config. Sub-agent queries for tasks with due dates in the next 7 days.
-- **Active projects/work packages** (`Bash` sub-agent per todo provider): Include adapter path and instance config (board IDs, cache paths). Sub-agent scans for active projects, work packages, goals, and due dates. For cached providers, use `jq` on local cache files.
+- **Active projects/work packages** (`Bash` sub-agent per todo provider): Include adapter path and instance config (board IDs, cache paths). Sub-agent scans for active projects, work packages, goals, and due dates.
 - **Personal items** (`Bash` sub-agent): Check configured providers for items on Today/This Week/Committed lists.
 
 **Parent agent reads directly (no sub-agent needed):**

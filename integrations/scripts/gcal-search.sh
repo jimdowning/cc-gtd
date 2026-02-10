@@ -1,16 +1,16 @@
 #!/bin/bash
 # Search for calendar events and output structured format
-# Usage: gcal-search.sh "search term" [calendar]
+# Usage: gcal-search.sh "search term" calendar
 #
 # Outputs events with details in a parseable format
 
 set -e
 
 SEARCH_TERM="$1"
-CALENDAR="${2:-jim.downing@cyclopsmarine.com}"
+CALENDAR="$2"
 
-if [[ -z "$SEARCH_TERM" ]]; then
-    echo "Usage: $0 \"search term\" [calendar]"
+if [[ -z "$SEARCH_TERM" || -z "$CALENDAR" ]]; then
+    echo "Usage: $0 \"search term\" calendar"
     exit 1
 fi
 

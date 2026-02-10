@@ -147,15 +147,19 @@ trello board add-label --board "{{board}}" --name "{{label_name}}" --color "{{co
 - If label doesn't exist: Create it or skip labeling
 - If network error: Retry once, then report and continue
 
+## Caching
+
+Trello boards with many cards benefit from local caching to avoid repeated API calls. Cache board data (lists and cards) as JSON files and query locally with `jq`. The system config should specify cache file paths; the adapter refreshes them via `trello-cli` and reads locally for queries.
+
 ## Example Sync Session
 
 ```bash
-# Get all cards from Cyclops board
-trello card list --board "Cyclops"
+# Get all cards from a board
+trello card list --board "{{board}}"
 
 # Create task from GTD
-trello card create --board "Cyclops" --list "To Do" --name "Fix authentication bug" --label "Code"
+trello card create --board "{{board}}" --list "To Do" --name "Fix authentication bug" --label "Code"
 
 # Mark task complete
-trello card archive --board "Cyclops" --card "abc123"
+trello card archive --board "{{board}}" --card "abc123"
 ```
