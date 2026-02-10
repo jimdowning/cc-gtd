@@ -2,6 +2,13 @@
 
 Start-of-week planning: run the processing pipeline, orient on the week ahead, decide focus projects, save the plan.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances and routing
+3. Load `systems/<active>/prompts/plan-week.md` if it exists for system-specific instructions
+4. Use `systems/<active>/data/` for inbox, recurring tasks, etc.
+
 ## Usage
 ```
 /plan-week
@@ -13,14 +20,22 @@ No prerequisites — stands alone. If `/review-week` was run, its output enriche
 
 ### 1. Observe — Processing Pipeline (automated)
 
-Run the full processing pipeline to achieve inbox zero. This is the prospective Observe step — gathering all potential work inputs before planning.
+Run the full processing pipeline to achieve inbox zero. This is the prospective Observe step. Delegate mechanical retrieval to parallel Haiku sub-agents.
 
-**Refresh provider data:**
-- Refresh Trello cache (both Software Team and Personal boards)
+**Phase 1 — Refresh provider caches (sub-agents, run first):**
+For each todo provider in `systems/<active>/config.md` that supports caching, spawn a `Bash` sub-agent (`model: "haiku"`) to refresh cached data. Include the adapter path (`integrations/adapters/todo/<type>.md`) and instance config (board IDs, cache paths, CLI tool paths) in the prompt. Run all cache refresh sub-agents in parallel. Wait for completion before source scanning — source scan sub-agents may need fresh cache data.
 
-**Source scan:**
-- **Obsidian journal** (last 7 days): List `Journal/` files via `list_vault_files`, read each with `get_vault_file`, extract incomplete checkboxes `- [ ]`
-- **Gmail**: For each `type: gmail` note source in `integrations/config.md`, run `node integrations/scripts/gmail-gtd/index.js scan <account>` for labeled emails
+**Phase 2 — Source scan (sub-agents, parallel after cache refresh):**
+For each note source configured in `systems/<active>/config.md`, spawn a Task sub-agent **in parallel**:
+
+| Provider type | Sub-agent type | Reason |
+|--------------|----------------|--------|
+| `obsidian-mcp` | `general-purpose` | Needs MCP tools |
+| `gmail` | `Bash` | Runs `node index.js scan` |
+
+Each sub-agent prompt should include: the adapter doc path (`integrations/adapters/notes/<type>.md`), the instance config excerpt from the system config, and instructions to return structured results. Use `model: "haiku"` for all retrieval sub-agents.
+
+Collect all sub-agent results before proceeding to clarify/route.
 
 **Auto-route clear items silently:**
 For each collected item, apply the clarify decision tree:
@@ -28,9 +43,9 @@ For each collected item, apply the clarify decision tree:
 2. What's the specific next action? (clarify if needed)
 3. Less than 2 minutes? → Flag for quick-do
 4. Multi-step? → Create project
-5. Route: assign @context, match to provider via `integrations/config.md`
+5. Route: assign @context, match to provider via `systems/<active>/config.md`
 
-Items that are **clear single actions** with obvious context are auto-routed silently — mint an ID, create in the matched provider, log the routing.
+Items that are **clear single actions** with obvious context are auto-routed silently — mint an ID, create in the matched provider using its adapter, log the routing.
 
 **Present only ambiguous items** for quick routing decisions.
 
@@ -38,20 +53,21 @@ Items that are **clear single actions** with obvious context are auto-routed sil
 
 ### 2. Observe — Gather Week Context
 
-**Last week's review**: Read `weekly/YYYY-WNN-review.md` if it exists for:
-- Incomplete / carried forward items
-- System health notes
-- Reflections
+Delegate external retrieval to parallel Haiku sub-agents. Local file reads stay in the parent agent.
 
-If no review exists, gather carryover from daily logs directly (read the last 7 days of `Journal/YYYY-MM-DD.md` and extract unchecked items from Daily Plan sections).
+**Sub-agent retrieval (spawn all in parallel, `model: "haiku"`):**
 
-**Calendar**: Fetch events for the next 7 days from all calendar providers (use `--calendar` flag for work calendar)
+- **Calendar** (`Bash` sub-agent): For each calendar provider, include the adapter path (`integrations/adapters/calendar/<type>.md`) and instance config (calendar name, account, filter flags). Sub-agent fetches events for the next 7 days and returns structured text.
+- **Due this week** (`Bash` sub-agent per todo provider): For each todo provider, include the adapter path and instance config. Sub-agent queries for tasks with due dates in the next 7 days.
+- **Active projects/work packages** (`Bash` sub-agent per todo provider): Include adapter path and instance config (board IDs, cache paths). Sub-agent scans for active projects, work packages, goals, and due dates. For cached providers, use `jq` on local cache files.
+- **Personal items** (`Bash` sub-agent): Check configured providers for items on Today/This Week/Committed lists.
 
-**Due dates**: Pull tasks with due dates in the next 7 days from Trello boards
+**Parent agent reads directly (no sub-agent needed):**
 
-**Active projects**: Scan Trello Software Team board for work packages and their goals/due dates. Highlight past-due or due-this-week goals.
+- **Last week's review**: Read `systems/<active>/journal/weekly/YYYY-WNN-review.md` if it exists for incomplete/carried-forward items, system health notes, and reflections.
+- **Carryover fallback**: If no review exists, read recent daily journal entries and extract unchecked items from Daily Plan sections.
 
-**Personal board**: Check Today/This Week/Committed lists for personal items
+Collect all sub-agent results before proceeding to Orient.
 
 ### 3. Orient — Present the Week's Landscape
 
@@ -64,25 +80,17 @@ Processing pipeline: 8 items collected, 5 auto-routed, 3 decided with you. Inbox
 
 **Calendar shape by day**:
 ```
-Mon: 3 meetings (9:30 standup, 14:00 client call, 16:00 1-1)
-Tue: 2 meetings (10:00 sprint planning, 15:00 demo)
+Mon: 3 meetings (...)
+Tue: 2 meetings (...)
 Wed: Light day — 1 meeting
-Thu: ...
-Fri: ...
+...
 ```
 
-**Tasks due this week**:
-- List all tasks with due dates in the next 7 days
-- Group by day or by urgency
-- Include source (trello-software, trello-personal, etc.)
+**Tasks due this week**: List all tasks with due dates in the next 7 days, grouped by day or urgency, including source provider.
 
-**Active project status**:
-- List work package goals with their due dates
-- Highlight any that are past due or due this week
+**Active project status**: List project goals with their due dates, highlight past due or due this week.
 
-**Carryover from last week**:
-- Items that were planned but not completed
-- "Do you still want to do these this week, or defer/drop?"
+**Carryover from last week**: Items that were planned but not completed.
 
 ### 4. Decide — Priority Conversation
 
@@ -95,7 +103,7 @@ Ask the user:
 3. "Which 2-3 projects do you want to make progress on this week?"
 4. "Anything from carryover you want to drop or defer to someday/maybe?"
 
-Wait for responses. Discuss trade-offs if needed (e.g., "Tuesday is packed with meetings, probably not a good day for deep work on the SDK").
+Wait for responses. Discuss trade-offs if needed.
 
 ### 5. Draft the Week Plan
 
@@ -112,16 +120,14 @@ Based on the conversation, draft a plan:
 ## Due This Week
 | Day | Task | Source | Status |
 |-----|------|--------|--------|
-| Mon | [id] Task description | trello-software | |
-| Tue | [id] Task description | trello-personal | |
+| Mon | [id] Task description | provider | |
 | ... | ... | ... | |
 
 ## Calendar Shape
 - **Mon**: Heavy meetings, admin only
 - **Tue**: Morning free, afternoon meetings
 - **Wed**: Open — best day for deep work
-- **Thu**: ...
-- **Fri**: ...
+- ...
 
 ## Carryover
 - [id] Task — carrying forward
@@ -136,7 +142,7 @@ Based on the conversation, draft a plan:
 
 Show the draft to the user. Ask if anything needs adjusting.
 
-Once confirmed, save to `weekly/YYYY-WNN-plan.md`.
+Once confirmed, save to `systems/<active>/journal/weekly/YYYY-WNN-plan.md`.
 
 ## Time Awareness
 

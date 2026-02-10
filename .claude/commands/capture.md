@@ -2,44 +2,78 @@
 
 Quickly capture thoughts, ideas, and tasks. Uses AI to auto-process obvious single-step actions and route to the correct provider.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances and routing
+3. Load `systems/<active>/prompts/capture.md` if it exists for system-specific instructions
+4. Use `systems/<active>/data/inbox.md` for inbox routing
+
 ## Usage
 ```
 \capture [item]
 ```
 
-## Source: Obsidian Journal
+## Source Scanning (no arguments)
 
-When run without arguments, capture also scans Obsidian daily notes for incomplete checkbox items.
+When run without arguments, scan all configured **note sources** (capture-type providers) from the active system's `config.md`.
 
-### Obsidian Integration
+For each note source, load its adapter from `integrations/adapters/notes/<type>.md` and follow the adapter's scan procedure.
 
-Uses MCP tools from obsidian-mcp-tools:
+### Retrieval Delegation
 
-1. **List recent daily notes**
-   - Tool: `list_vault_files` with directory `Journal/`
-   - Filenames are always `YYYY-MM-DD.md`
-   - Compute the date 7 days ago and only select files whose filename date is within the last 7 days
-   - Ignore subdirectories (e.g. `2024/`, `2025/`) and any file whose name doesn't match `YYYY-MM-DD.md`
+Source scanning is mechanical retrieval work. Delegate it to parallel Haiku sub-agents to reduce cost and latency. The parent agent handles all clarify/route decisions afterward.
 
-2. **Read each matching note**
-   - Tool: `get_vault_file` for each daily note from the last 7 days only
-   - Parse for incomplete checkboxes: `- [ ] task text`
+**Procedure:**
 
-3. **Present to user**
-   - Show found incomplete items grouped by date
-   - User confirms which to capture as tasks
+1. Read `systems/<active>/config.md` to identify all configured note sources
+2. For each note source, spawn a Task sub-agent **in parallel** with:
+   - `model: "haiku"`
+   - `subagent_type:` choose by provider type (see table below)
+   - `prompt:` include the adapter doc path, the instance config excerpt (account, auth, folder paths, etc.), and the expected output format
 
-4. **Process confirmed items**
-   - Mint a task ID for each item (see `/mint-id` or use `LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5`)
-   - Route through standard capture analysis
-   - Optionally mark as captured in Obsidian (update to `- [x]`)
+| Provider type | Sub-agent type | Reason |
+|--------------|----------------|--------|
+| `obsidian-mcp` | `general-purpose` | Needs MCP tools (`list_vault_files`, `get_vault_file`, etc.) |
+| `gmail` | `Bash` | Runs `node index.js scan` via shell |
+
+3. Collect all sub-agent results before proceeding to "## Smart Processing"
+4. Local file reads (inbox, data files) stay in the parent agent — no sub-agent needed
+
+**Sub-agent prompt pattern:**
+```
+Read the adapter doc at integrations/adapters/notes/<type>.md and follow its scan procedure.
+
+Provider config:
+  <paste instance config excerpt from systems/<active>/config.md>
+
+Return results as structured text: one item per line, with source file/thread and item description.
+<any provider-specific instructions from systems/<active>/prompts/capture.md>
+```
+
+**What stays in the parent agent:** All clarify/route decisions, ambiguous item presentation (AskUserQuestion), ID minting, provider creation (write operations), and marking captured items in sources (write-back).
+
+### Obsidian Source (sub-agent: general-purpose, haiku)
+
+If a note source of type `obsidian-mcp` is configured:
+1. Follow the scan procedure in `integrations/adapters/notes/obsidian.md`
+2. Present found incomplete items grouped by date
+3. User confirms which to capture
+
+### Gmail Source (sub-agent: Bash, haiku)
+
+If a note source of type `gmail` is configured:
+1. Follow the scan procedure in `integrations/adapters/notes/gmail.md`
+2. Present found conversations grouped by account
+3. User selects which conversations to capture
+4. After tasks are confirmed and created, follow the adapter's clear procedure
 
 ### Example Flow
 
 ```
 /capture
--> Scanning Obsidian journal...
--> Found 3 incomplete items:
+-> Scanning note sources...
+-> Found 3 incomplete items from Obsidian:
 
   2026-01-26.md:
   - [ ] Email response to client
@@ -48,74 +82,12 @@ Uses MCP tools from obsidian-mcp-tools:
   2026-01-25.md:
   - [ ] Follow up on invoice
 
--> [Select items to capture or press Enter for all]
-```
-
-See `integrations/adapters/notes/obsidian.md` for MCP tool details.
-
-## Source: Gmail Labeled Emails
-
-When run without arguments, capture also scans Gmail accounts configured as note sources in `integrations/config.md` for emails labeled `gtd`.
-
-### Gmail Integration
-
-Uses the `gmail-gtd` Node.js CLI tool at `integrations/scripts/gmail-gtd/index.js`:
-
-1. **Scan each configured Gmail account**
-   - For each note source with `type: gmail` in `integrations/config.md`, run:
-   ```bash
-   node integrations/scripts/gmail-gtd/index.js scan <account-email>
-   ```
-   - Parses JSON output containing conversations grouped by subject, with sender, date, message count, UIDs, and link
-
-2. **Present to user**
-   - Show found conversations grouped by account
-   - Format: `"Subject" from Sender (N messages, Date) — [Link](url)`
-   - User selects which conversations to capture as tasks
-
-3. **Process confirmed items**
-   - Mint a task ID for each selected conversation
-   - Route through standard capture analysis (determine context/project, select provider)
-   - Task description includes `[Email](link)` for clickback to the original Gmail thread
-
-4. **Clear label from captured conversations**
-   - After tasks are confirmed and created, remove the `gtd` label:
-   ```bash
-   node integrations/scripts/gmail-gtd/index.js clear <account-email> <uid> [uid...]
-   ```
-   - Pass all `uids` from each captured conversation
-
-### Example Flow
-
-```
-/capture
--> Scanning Obsidian journal...
--> Found 2 incomplete items
-
--> Scanning Gmail (user@example.com)...
--> Found 2 labeled emails:
-
-  Gmail (user@example.com):
+-> Found 2 labeled emails from Gmail:
   1. "SDK delivery timeline" from Alice (3 messages, Jan 27)
   2. "Invoice #4521" from billing@vendor.com (1 message, Jan 26)
 
 -> [Select items to capture or press Enter for all]
-
--> Capturing "Re: SDK delivery timeline"...
-   [a9f3q] Follow up on SDK delivery timeline [Email](https://mail.google.com/...)
-   → Context: @work-code → trello-software
-
--> Clearing 'gtd' label from captured emails...
--> Done. 1 email captured, label cleared.
 ```
-
-### Error Handling
-
-- **No config/App Password:** Skip Gmail source, show warning with setup instructions
-- **IMAP connection error:** Skip Gmail source, continue with other capture sources
-- **Empty results:** Report "No labeled emails found" and continue
-
-See `integrations/adapters/notes/gmail.md` for full adapter details.
 
 ## Smart Processing
 
@@ -125,12 +97,12 @@ The command automatically processes items when they are:
 - **Actionable immediately** (not research or multi-step projects)
 
 Auto-processed items are simultaneously:
-1. Added to the appropriate project's `tasks.md` file in GTD system
-2. Created in the matching external provider based on routing rules
+1. Added to the appropriate data file in the active system
+2. Created in the matching external provider using its adapter
 
 ## Provider Routing
 
-When capturing, the system routes to the correct provider based on `integrations/config.md`:
+When capturing, the system routes to the correct provider based on the active system's `config.md`:
 
 ### Route Matching Process
 1. Parse task to identify context (@work-code, @home-calls, etc.)
@@ -139,8 +111,8 @@ When capturing, the system routes to the correct provider based on `integrations
    - First match by project pattern: `project: cyclops/*`
    - Then match by context pattern: `context: @work-*`
    - Fall back to default provider: `default: true`
-4. Load adapter for matched provider type
-5. Create task in both GTD and external provider
+4. Load adapter from `integrations/adapters/todo/<type>.md`
+5. Create task in both system data and external provider
 
 ### Routing Examples
 
@@ -149,7 +121,7 @@ When capturing, the system routes to the correct provider based on `integrations
 \capture "Fix authentication bug in cyclops"
 → Context: @work-code
 → Routes to: trello-cyclops (matches context: @work-*)
-→ Creates: Trello card in Cyclops board + GTD tasks.md
+→ Uses adapter: integrations/adapters/todo/trello.md
 ```
 
 **Personal task routes to Asana:**
@@ -157,7 +129,7 @@ When capturing, the system routes to the correct provider based on `integrations
 \capture "Schedule dentist appointment"
 → Context: @home-calls
 → Routes to: asana-personal (matches context: @home-*)
-→ Creates: Asana task in Personal workspace + GTD tasks.md
+→ Uses adapter: integrations/adapters/todo/asana.md
 ```
 
 **Errand stays local:**
@@ -165,42 +137,27 @@ When capturing, the system routes to the correct provider based on `integrations
 \capture "Buy milk on way home"
 → Context: @errands
 → Routes to: local-gtd (default fallback)
-→ Creates: GTD tasks.md only (no external sync)
+→ Uses adapter: integrations/adapters/todo/local.md
 ```
 
-## Examples
+## Ambiguous Item Routing
 
-**Auto-processed (goes directly to project + provider):**
+When an item is ambiguous (unclear category, uncertain priority, multiple valid destinations), use the `AskUserQuestion` tool to present routing options interactively. For example:
+
 ```
-\capture "Call dentist at 555-1234 to schedule cleaning"
-→ Personal health project: @home-calls: Call dentist at 555-1234
-→ Routed to: asana-personal
-
-\capture "Email Sarah about Friday meeting agenda"
-→ Relevant work project: @work-computer: Email Sarah about Friday meeting
-→ Routed to: trello-cyclops (if work context matches)
-
-\capture "Buy milk on way home"
-→ General tasks: @errands: Buy milk on way home
-→ Routed to: local-gtd (local only)
+Question: "How should we route this item?"
+Options:
+  - "Someday/Maybe" — Park it for future consideration
+  - "Next Action (@context)" — It's actionable now
+  - "@agenda-person" — Discussion point for someone
+  - "Skip" — Just a note, don't capture
 ```
 
-**Sent to inbox (needs clarification):**
-```
-\capture "Research new project management tools"
-→ inbox.md (unclear scope, needs processing)
-→ Also created in default provider's inbox if available
-
-\capture "Team meeting went badly"
-→ inbox.md (unclear what action to take)
-
-\capture "Fix the website issue"
-→ inbox.md (vague, needs more specifics)
-```
+This applies to both individual captures and items found during source scanning. Clear-cut items are still auto-routed silently.
 
 ## AI Analysis
 
-For each captured item, analyzes:
+For each captured item, analyze:
 - **Clarity**: Is the action specific and unambiguous?
 - **Context**: Can we determine the appropriate @context?
 - **Project**: Does this belong to an existing active project?
@@ -208,64 +165,39 @@ For each captured item, analyzes:
 - **Actionability**: Is it a single physical action?
 - **Routing**: Which provider should handle this task?
 
-## Provider Integration
+## Task Creation
 
-When auto-processing tasks:
+### 1. Mint a Task ID
 
-### 1. Identify Target Project
-From active GTD projects in `projects/active/*/info.md`
-
-### 2. Determine Context
-Map to appropriate @context:
-- @work-code, @work-errand, @work-calls, @work-computer
-- @home-computer, @home-calls
-- @sideprojects-code, @sideprojects-errand
-- @errands
-
-### 3. Route to Provider
-Using `integrations/config.md` routing rules:
-- Check project patterns
-- Check context patterns
-- Use default provider if no match
-
-### 4. Create Task
-
-**Always mint a task ID first** using `/mint-id` or:
+Use `/mint-id` or:
 ```bash
 LC_ALL=C tr -dc 'a-z0-9' < /dev/urandom | head -c 5
 ```
 
 Include the ID in the task name: `[abc12] Task description`
 
-Using provider's adapter from `integrations/adapters/todo/{{type}}.md`:
+### 2. Determine Context
 
-**Trello:**
-```bash
-trello card create --board "{{board}}" --list "{{list}}" --name "{{task}}" --label "{{context}}"
-```
+Map to appropriate @context based on the task content.
 
-**Asana:**
-```bash
-asana task create --workspace "{{workspace}}" --project "{{project}}" --name "{{task}}" --tags "{{context}}"
-```
+### 3. Route to Provider
 
-**Todoist:**
-```bash
-echo -e "\n" | tod task create --project "{{project}}" --content "{{task}}" --label "{{context}}" --no-section --priority X
-```
+Using the active system's `config.md` routing rules, find the matching provider instance.
 
-**Local:**
-Add to GTD files only, no external API call
+### 4. Create via Adapter
+
+Load the matched adapter from `integrations/adapters/todo/<type>.md` and follow its create procedure with the instance-specific config from the system's `config.md`.
 
 ### 5. Handle Inbox Items
+
 If no clear project exists, items go to:
-- GTD `inbox.md` with timestamp
+- `systems/<active>/data/inbox.md` with timestamp
 - Default provider's inbox (if provider supports inbox)
 
 ## Fallback Behavior
 
 When in doubt, items go to inbox with timestamp:
-- **GTD**: `- [ ] YYYY-MM-DD HH:MM - [item]` in inbox.md
+- **System data**: `- [ ] YYYY-MM-DD HH:MM - [item]` in `systems/<active>/data/inbox.md`
 - **Provider**: Created in default provider's inbox (if available)
 
 **Next step:** Inbox items are processed automatically by the next `/plan-day` or `/plan-week` run.
@@ -275,22 +207,11 @@ When in doubt, items go to inbox with timestamp:
 - **Duplicate prevention**: Check if similar task already exists before creating
 - **Context mapping**: Use consistent GTD context → provider label/tag mapping
 - **Priority assignment**: Default to normal priority, higher for urgent keywords
-- **Error handling**: If provider creation fails, still add to GTD system
-- **Sync consistency**: Task appears in both GTD and provider immediately
+- **Error handling**: If provider creation fails, still add to system data
+- **Sync consistency**: Task appears in both system data and provider immediately
 
 ## Configuration Reference
 
-See `integrations/config.md` for:
-- Provider instances and their routes
-- Adding new providers
-- Customizing routing rules
-
-See `integrations/adapters/todo/` for:
-- Provider-specific command syntax
-- Context-to-label mappings
-
-See `/plan-day` and `/plan-week` for:
-- Embedded processing pipeline (clarify + organize to inbox zero)
-
-See `/pick` for:
-- Ad-hoc work selection from available tasks
+See `integrations/config.md` for schema documentation.
+See `integrations/adapters/todo/` for provider-specific adapter docs.
+See `integrations/adapters/notes/` for capture source adapter docs.

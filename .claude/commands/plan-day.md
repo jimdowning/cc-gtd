@@ -2,6 +2,13 @@
 
 Morning planning: run the processing pipeline, orient on the day, decide priorities, save the plan.
 
+## System Resolution
+
+1. Read `.claude/active-system` for the active system name
+2. Load `systems/<active>/config.md` for provider instances and routing
+3. Load `systems/<active>/prompts/plan-day.md` if it exists for system-specific instructions
+4. Use `systems/<active>/data/` for recurring tasks, inbox, etc.
+
 ## Usage
 ```
 /plan-day
@@ -15,17 +22,27 @@ Check what time it is. If it's past 10am, acknowledge that the morning is partia
 
 ### 2. Check for Existing Plan
 
-Read today's note from Obsidian Journal (`Journal/YYYY-MM-DD.md` via `get_vault_file`). If there's already a plan for today:
+Check for today's journal note in the system's journal provider (Obsidian or local). If there's already a plan for today:
 - This might be a mid-day check-in — consider suggesting `/replan` instead
 - Or the user may want to start fresh — ask which they prefer
 
 ### 3. Observe — Processing Pipeline (automated)
 
-Run the full processing pipeline to achieve inbox zero. This is the prospective Observe step — gathering all potential work inputs before planning.
+Run the full processing pipeline to achieve inbox zero. This is the prospective Observe step.
 
-**Source scan:**
-- **Obsidian journal** (last 7 days): List `Journal/` files via `list_vault_files`, read each with `get_vault_file`, extract incomplete checkboxes `- [ ]`
-- **Gmail**: For each `type: gmail` note source in `integrations/config.md`, run `node integrations/scripts/gmail-gtd/index.js scan <account>` for labeled emails
+**Source scan (delegated to sub-agents):**
+Delegate source scanning to parallel Haiku sub-agents — this is mechanical retrieval that doesn't need the parent agent's intelligence.
+
+For each note source configured in `systems/<active>/config.md`, spawn a Task sub-agent **in parallel**:
+
+| Provider type | Sub-agent type | Reason |
+|--------------|----------------|--------|
+| `obsidian-mcp` | `general-purpose` | Needs MCP tools |
+| `gmail` | `Bash` | Runs `node index.js scan` |
+
+Each sub-agent prompt should include: the adapter doc path (`integrations/adapters/notes/<type>.md`), the instance config excerpt from the system config, and instructions to return structured results. Use `model: "haiku"` for all retrieval sub-agents.
+
+Collect all sub-agent results before proceeding to clarify/route.
 
 **Auto-route clear items silently:**
 For each collected item, apply the clarify decision tree:
@@ -33,35 +50,31 @@ For each collected item, apply the clarify decision tree:
 2. What's the specific next action? (clarify if needed)
 3. Less than 2 minutes? → Flag for quick-do
 4. Multi-step? → Create project
-5. Route: assign @context, match to provider via `integrations/config.md`
+5. Route: assign @context, match to provider via `systems/<active>/config.md`
 
-Items that are **clear single actions** with obvious context are auto-routed silently — mint an ID, create in the matched provider, log the routing.
+Items that are **clear single actions** with obvious context are auto-routed silently — mint an ID, create in the matched provider using its adapter, log the routing.
 
-**Present only ambiguous items** for quick routing decisions. Keep this focused — the user shouldn't have to process 20 items one by one. Batch similar items when possible.
+**Present only ambiguous items** for quick routing decisions. Keep this focused — batch similar items when possible.
 
 **Result:** Inbox zero. All items either routed or decided.
 
 ### 4. Observe — Gather Day Context
 
-**Weekly focus**: Read `weekly/YYYY-WNN-plan.md` to get:
-- Focus projects for the week
-- Any due dates flagged for this week
+Delegate external retrieval to parallel Haiku sub-agents. Local file reads stay in the parent agent.
 
-**Recurring tasks**: Check `recurring.md` for tasks due today:
-- Parse schedules against `last_created` dates
-- If something is due, create it in the specified provider and update `last_created`
-- Report what was created
+**Sub-agent retrieval (spawn all in parallel, `model: "haiku"`):**
 
-**Calendar**: Fetch today's events from configured calendar providers (use `--calendar` flag to filter to Jim's calendars only)
+- **Calendar** (`Bash` sub-agent): For each calendar provider in `systems/<active>/config.md`, include the adapter path (`integrations/adapters/calendar/<type>.md`) and instance config (calendar name, account, filter flags) in the prompt. Sub-agent fetches today's events and returns structured text.
+- **Due today** (`Bash` sub-agent per todo provider): For each todo provider in the system config, include the adapter path and instance config. Sub-agent queries for tasks with today's due date and returns the list.
+- **Candidate tasks** (`Bash` sub-agent per todo provider): From the week's focus projects, sub-agent pulls tasks that could be worked on today. Include project/list identifiers from the week plan in the prompt.
 
-**Due today**: Pull tasks with due dates of today from Trello boards
+**Parent agent reads directly (no sub-agent needed):**
 
-**Candidate tasks**: From the week's focus projects, pull tasks that could be worked on today:
-- Check In Progress items on Software Team board
-- Check cards in focus project work packages
-- Check Today/This Week lists on Personal board
+- **Weekly focus**: Read the current week plan from the system's journal (e.g., `systems/<active>/journal/weekly/YYYY-WNN-plan.md`) to get focus projects and due dates. Read this first — focus project identifiers inform the candidate tasks sub-agent prompts above.
+- **Recurring tasks**: Check `systems/<active>/data/recurring.md` for tasks due today. Parse schedules against `last_created` dates. If something is due, create it in the specified provider (using its adapter) and update `last_created`. Report what was created.
+- **Yesterday's carryover**: Read yesterday's journal note, note any incomplete items from the Daily Plan section.
 
-**Yesterday's carryover**: Read yesterday's journal note from Obsidian (`Journal/YYYY-MM-DD.md`), note any incomplete items from the Daily Plan section
+Collect all sub-agent results before proceeding to Orient.
 
 ### 5. Orient — Present the Situation
 
@@ -75,27 +88,19 @@ Processing pipeline: 5 items collected, 3 auto-routed, 2 decided with you. Inbox
 **Time available**:
 ```
 It's 08:15. Your calendar today:
-- 09:30-10:00 Will / Jim
-- 11:30-12:00 Workout Pilot Updates
-- 14:00-14:30 MQTT-Purr
-- 15:30-16:00 Modal Students
+- 09:30-10:00 Meeting
+- 14:00-14:30 Meeting
 
-Available blocks: 08:15-09:30 (1h15m), 10:00-11:30 (1h30m), 12:00-14:00 (2h), 14:30-15:30 (1h), 16:00+ (wind down)
+Available blocks: 08:15-09:30 (1h15m), 10:00-14:00 (4h), 14:30+ (wind down)
 ```
 
-**Due today**:
-- List any tasks with today's due date
+**Due today**: List any tasks with today's due date
 
-**Weekly focus projects**:
-- Remind what projects were chosen for this week
-- Show candidate tasks from those projects
+**Weekly focus projects**: Remind what projects were chosen, show candidate tasks
 
-**Carryover from yesterday**:
-- Items that were planned but not completed
-- "Still want these, or defer?"
+**Carryover from yesterday**: Items that were planned but not completed
 
-**Recurring tasks created**:
-- Note any that were just created
+**Recurring tasks created**: Note any that were just created
 
 ### 6. Decide — Priority Conversation
 
@@ -111,7 +116,7 @@ This is a conversation. Wait for responses. Don't assume.
 
 Based on the conversation, draft time blocks that fit the available slots.
 
-The daily note lives in Obsidian at `Journal/YYYY-MM-DD.md` and has three top-level sections. The Daily Plan is written by `/plan-day`, Notes are added manually by the user during the day, and the Daily Review is written by `/review-day` or manually at end of day.
+The daily note has three top-level sections: Daily Plan (written by `/plan-day`), Notes (added manually), and Daily Review (written by `/review-day`).
 
 ```markdown
 # Daily Plan
@@ -121,7 +126,7 @@ The daily note lives in Obsidian at `Journal/YYYY-MM-DD.md` and has three top-le
 
 | Time | Event | Source |
 |------|-------|--------|
-| 09:30 | Will / Jim | [work] |
+| 09:30 | Meeting | [work] |
 | ... | ... | ... |
 
 ## Top 3 Priorities
@@ -154,7 +159,7 @@ The daily note lives in Obsidian at `Journal/YYYY-MM-DD.md` and has three top-le
 
 Show the draft. Ask if it looks right.
 
-Once confirmed, save to Obsidian via `create_vault_file` at `Journal/YYYY-MM-DD.md`. Only write the `# Daily Plan` section and the empty `# Notes` and `# Daily Review` stubs — the user fills in Notes manually.
+Once confirmed, save to the system's journal. Only write the `# Daily Plan` section and the empty `# Notes` and `# Daily Review` stubs.
 
 ## Time Awareness
 
