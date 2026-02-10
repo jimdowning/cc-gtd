@@ -21,3 +21,4 @@ systems/*/
 
 # Active system state
 .claude/active-system
+systems
