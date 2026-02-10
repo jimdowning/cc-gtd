@@ -16,6 +16,8 @@ Morning planning: run the processing pipeline, orient on the day, decide priorit
 
 ## Process
 
+**Extension hook: `before`** — Run any extensions declared for this hook in the system prompt overlay before starting the planning process.
+
 ### 1. Note the Current Time
 
 Check what time it is. If it's past 10am, acknowledge that the morning is partially gone and only plan remaining time. If it's afternoon, focus on what's realistic for the rest of the day.
@@ -102,6 +104,8 @@ Available blocks: 08:15-09:30 (1h15m), 10:00-14:00 (4h), 14:30+ (wind down)
 
 **Recurring tasks created**: Note any that were just created
 
+**Extension hook: `after-orient`** — Run any extensions declared for this hook after presenting the situation and before the priority conversation.
+
 ### 6. Decide — Priority Conversation
 
 Ask the user:
@@ -160,6 +164,16 @@ The daily note has three top-level sections: Daily Plan (written by `/plan-day`)
 Show the draft. Ask if it looks right.
 
 Once confirmed, save to the system's journal. Only write the `# Daily Plan` section and the empty `# Notes` and `# Daily Review` stubs.
+
+**Extension hook: `after`** — Run any extensions declared for this hook after the plan is saved.
+
+## Extension Hooks
+
+This command supports extension hooks — named points where system-specific extensions can inject additional steps. If `systems/<active>/prompts/plan-day.md` exists and declares an `## Extensions` section, execute the declared extensions at each matching hook point.
+
+Available hooks: `before`, `after-orient`, `after`.
+
+See `integrations/extensions.md` for the full extension format.
 
 ## Time Awareness
 

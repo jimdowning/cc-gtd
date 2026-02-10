@@ -17,6 +17,8 @@ Explicitly optional — tomorrow's `/plan-day` detects carryover regardless of w
 
 ## Process
 
+**Extension hook: `before`** — Run any extensions declared for this hook in the system prompt overlay before starting the review process.
+
 ### 1. Read Today's Plan
 
 Read today's journal note from the active system's journal.
@@ -48,6 +50,8 @@ Not in plan but done:
 - [r3k9m] Task E (from provider movement)
 ```
 
+**Extension hook: `after-present`** — Run any extensions declared for this hook before the conversation.
+
 ### 4. Brief Conversation
 
 Ask:
@@ -75,6 +79,16 @@ Append the `# Daily Review` section to today's journal note:
 ## Notes
 <!-- User's reflections from the conversation -->
 ```
+
+**Extension hook: `after`** — Run any extensions declared for this hook after the review is written.
+
+## Extension Hooks
+
+This command supports extension hooks — named points where system-specific extensions can inject additional steps. If `systems/<active>/prompts/review-day.md` exists and declares an `## Extensions` section, execute the declared extensions at each matching hook point.
+
+Available hooks: `before`, `after-present`, `after`.
+
+See `integrations/extensions.md` for the full extension format.
 
 ## Related Commands
 
