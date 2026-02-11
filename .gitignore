@@ -1,11 +1,12 @@
-daily/
-projects/
-weekly/
-calendar.md
-inbox.md
-projects.md
-someday-maybe.md
-waiting-for.md
+# System data files (scoped to systems/ to avoid ignoring engine files)
+systems/**/daily/
+systems/**/projects/
+systems/**/weekly/
+systems/**/calendar.md
+systems/**/inbox.md
+systems/**/projects.md
+systems/**/someday-maybe.md
+systems/**/waiting-for.md
 
 # User-specific files (not shared with other users of this GTD codebase)
 *.local.md
