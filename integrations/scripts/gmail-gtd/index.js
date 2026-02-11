@@ -21,10 +21,13 @@ function getAppPassword(account) {
 }
 
 function createClient(account, appPassword) {
+  const host = process.env.IMAP_HOST || "imap.gmail.com";
+  const port = parseInt(process.env.IMAP_PORT || "993", 10);
   return new ImapFlow({
-    host: "imap.gmail.com",
-    port: 993,
+    host: host,
+    port: port,
     secure: true,
+    tls: { servername: "imap.gmail.com" },
     auth: {
       user: account,
       pass: appPassword,

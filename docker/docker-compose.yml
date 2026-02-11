@@ -1,0 +1,47 @@
+networks:
+  internal:
+    internal: true
+  external: {}
+
+services:
+  squid:
+    build:
+      context: .
+      dockerfile: Dockerfile.squid
+    networks:
+      - internal
+      - external
+    healthcheck:
+      test: ["CMD", "squidclient", "-h", "127.0.0.1", "-p", "3128", "mgr:info"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  framework:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      squid:
+        condition: service_healthy
+    networks:
+      - internal
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    stdin_open: true
+    tty: true
+    environment:
+      - HTTP_PROXY=http://squid:3128
+      - HTTPS_PROXY=http://squid:3128
+      - NO_PROXY=localhost,127.0.0.1,host.docker.internal
+      - IMAP_HOST=squid
+      - IMAP_PORT=1993
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - ASANA_ACCESS_TOKEN=${ASANA_ACCESS_TOKEN:-}
+    volumes:
+      - ${CC_GTD_PATH:-..}:/workspace/cc-gtd
+      - ${SYSTEMS_PATH:-../systems}:/workspace/cc-gtd/systems
+      - ~/.trello-cli:/root/.trello-cli:ro
+      - ${GCALCLI_OAUTH_DIR:-~/.gcalcli}:/credentials/gcalcli:ro
+      - ~/.claude:/root/.claude
+    working_dir: /workspace/cc-gtd

@@ -1,0 +1,17 @@
+# Claude Code runtime
+api.anthropic.com
+platform.claude.com
+claude.ai
+.sentry.io
+statsig.anthropic.com
+
+# Provider APIs
+api.trello.com
+api.todoist.com
+app.asana.com
+.googleapis.com
+accounts.google.com
+oauth2.googleapis.com
+
+# Package managers (for gmail-gtd npm install if node_modules missing)
+registry.npmjs.org

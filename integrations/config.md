@@ -115,7 +115,7 @@ routes:
 
 ```yaml
 name: unique-instance-id
-type: gcal | icalbuddy
+type: gcal
 # Type-specific config:
 calendar: email-or-name
 # Authentication:
