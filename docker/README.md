@@ -5,15 +5,22 @@ Runs Claude Code inside a Docker container with a Squid proxy that restricts out
 ## Architecture
 
 ```
-┌────────────────────────────┐     ┌──────────────────────────┐
+  host-install-claude.sh
+  (download + verify checksum)
+           │
+           ▼
+     claude-bin/  ──── read-only mount ────┐
+                                           │
+┌────────────────────────────┐     ┌───────┴──────────────────┐
 │    framework container     │     │     squid container       │
 │                            │     │                           │
-│  Claude Code + CLI tools   │────>│  Squid (port 3128)        │──> Internet
-│  cc-gtd bind-mounted      │     │  socat IMAP fwd (1993)    │   (allowlisted
-│  credentials (read-only)   │     │                           │    domains only)
-│                            │     │  allowed-domains.txt      │
-│  NO direct internet        │     │                           │
-│  (internal network only)   │     └──────────────────────────┘
+│  CLI tools + /opt/claude   │────>│  Squid (port 3128)        │──> Internet
+│  (read-only, host-verified)│     │  socat IMAP fwd (1993)    │   (allowlisted
+│  cc-gtd bind-mounted      │     │                           │    domains only)
+│  credentials (read-only)   │     │  allowed-domains.txt      │
+│                            │     │                           │
+│  NO direct internet        │     └──────────────────────────┘
+│  (internal network only)   │
 │                            │
 │  Obsidian MCP via ──────────────> host.docker.internal:8787
 │  host SSE bridge           │
@@ -26,6 +33,7 @@ The framework container sits on an internal-only Docker network with no internet
 
 - Docker Desktop running
 - `ANTHROPIC_API_KEY` set in your environment (or in a `.env` file in this directory)
+- Run `./host-install-claude.sh` before first use (downloads and verifies Claude Code)
 - Credential files in place for the providers you use:
   - `~/.trello-cli/` — Trello CLI auth
   - `~/.gcalcli/` (or set `GCALCLI_OAUTH_DIR`) — gcalcli OAuth tokens
@@ -36,7 +44,10 @@ The framework container sits on an internal-only Docker network with no internet
 ```bash
 cd docker
 
-# First time: build both images (slow — compiles Rust, installs Claude Code)
+# First time: install Claude Code on the host (verified checksum)
+./host-install-claude.sh
+
+# Build both images (slow first time — compiles Rust)
 docker compose build
 
 # Start
@@ -63,13 +74,14 @@ Set these in your shell or in `docker/.env`:
 
 ## Updating Claude Code
 
-Claude Code is baked into the image at build time with a verified checksum. To update:
+Claude Code is installed on the host and mounted read-only into the container. To update:
 
 ```bash
-docker compose build framework
+./host-install-claude.sh
+docker compose restart framework
 ```
 
-This downloads the latest Claude Code, verifies its checksum against the official manifest, and bakes both the binary and expected checksum into the image. At every container start, the entrypoint re-verifies the binary against the baked-in checksum. If it doesn't match, the container refuses to start.
+The host script downloads the latest Claude Code in a temporary container, verifies its checksum against the official manifest, and stores the verified binary in `claude-bin/`. This directory is mounted read-only at `/opt/claude` — the agent cannot modify the binary, the checksum, or the entrypoint at runtime.
 
 ## Modifying the domain allowlist
 
@@ -133,7 +145,7 @@ docker compose exec framework bash -c 'unset HTTP_PROXY HTTPS_PROXY; curl -s --c
 
 ## Troubleshooting
 
-**Container won't start / checksum mismatch**: The Claude Code binary doesn't match the build-time checksum. Rebuild: `docker compose build framework`
+**Claude Code not found**: Run `./host-install-claude.sh` to install the verified binary, then restart: `docker compose restart framework`
 
 **Squid health check failing**: Check `docker compose logs squid`. Common cause: DNS resolution issues in the container network.
 

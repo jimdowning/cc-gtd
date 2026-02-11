@@ -44,4 +44,7 @@ services:
       - ~/.trello-cli:/root/.trello-cli:ro
       - ${GCALCLI_OAUTH_DIR:-~/.gcalcli}:/credentials/gcalcli:ro
       - ~/.claude:/root/.claude
+      - ./container-settings.json:/root/.claude/settings.json:ro
+      - ./claude-bin:/opt/claude:ro
+      - ./entrypoint.sh:/entrypoint.sh:ro
     working_dir: /workspace/cc-gtd

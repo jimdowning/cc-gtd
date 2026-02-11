@@ -1,20 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# --- Claude Code binary integrity check ---
-EXPECTED_CHECKSUM=$(cat /etc/claude-expected-checksum)
-CLAUDE_BIN=$(readlink -f /root/.local/bin/claude)
-ACTUAL_CHECKSUM=$(sha256sum "$CLAUDE_BIN" | awk '{print $1}')
-
-if [ "$EXPECTED_CHECKSUM" != "$ACTUAL_CHECKSUM" ]; then
-  echo "FATAL: Claude Code binary checksum mismatch" >&2
-  echo "  Expected: $EXPECTED_CHECKSUM" >&2
-  echo "  Actual:   $ACTUAL_CHECKSUM" >&2
-  echo "  Binary may have been tampered with." >&2
-  echo "  Rebuild the image: docker compose build framework" >&2
-  exit 1
+# --- Symlink claude to expected native install path ---
+# Claude Code detects installMethod=native and expects the binary at
+# /root/.local/bin/claude. Our binary is mounted at /opt/claude/claude.
+if [ -x /opt/claude/claude ] && [ ! -e /root/.local/bin/claude ]; then
+  mkdir -p /root/.local/bin
+  ln -s /opt/claude/claude /root/.local/bin/claude
 fi
-echo "Claude Code checksum verified: $ACTUAL_CHECKSUM"
+export PATH="/root/.local/bin:$PATH"
+
+# --- Seed /root/.claude.json if missing (avoids ENOENT on first run) ---
+if [ ! -f /root/.claude.json ]; then
+  echo '{}' > /root/.claude.json
+fi
 
 # --- Install gmail-gtd dependencies if needed ---
 GMAIL_GTD_DIR="/workspace/cc-gtd/integrations/scripts/gmail-gtd"
@@ -35,4 +34,11 @@ for tool in node git jq rg trello tod gcalcli claude; do
 done
 echo "-------------------------"
 
-exec claude "$@"
+# If arguments are passed, run claude directly (e.g. docker compose run framework)
+# Otherwise, keep the container alive for 'docker compose exec' usage
+if [ $# -gt 0 ]; then
+  exec claude "$@"
+else
+  echo "Container ready. Use: docker compose exec -it framework claude"
+  exec sleep infinity
+fi
