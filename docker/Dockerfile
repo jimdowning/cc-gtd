@@ -31,6 +31,11 @@ RUN pip3 install --break-system-packages gcalcli
 # and mounted read-only at /opt/claude
 ENV PATH="/root/.local/bin:/opt/claude:${PATH}"
 
+# Pre-create paths needed at runtime on the read-only root filesystem
+# .claude.json must be writable at runtime, so symlink it into the writable
+# .claude bind mount. The entrypoint seeds the actual file there.
+RUN mkdir -p /root/.local/bin && ln -s /root/.claude/.claude.json /root/.claude.json
+
 WORKDIR /workspace/cc-gtd
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -4,15 +4,16 @@ set -euo pipefail
 # --- Symlink claude to expected native install path ---
 # Claude Code detects installMethod=native and expects the binary at
 # /root/.local/bin/claude. Our binary is mounted at /opt/claude/claude.
+# /root/.local/bin is a tmpfs mount (writable); directory exists from image.
 if [ -x /opt/claude/claude ] && [ ! -e /root/.local/bin/claude ]; then
-  mkdir -p /root/.local/bin
   ln -s /opt/claude/claude /root/.local/bin/claude
 fi
 export PATH="/root/.local/bin:$PATH"
 
-# --- Seed /root/.claude.json if missing (avoids ENOENT on first run) ---
-if [ ! -f /root/.claude.json ]; then
-  echo '{}' > /root/.claude.json
+# --- Seed .claude.json on the writable bind mount ---
+# /root/.claude.json is a symlink (from image) -> /root/.claude/.claude.json (bind mount)
+if [ ! -f /root/.claude/.claude.json ]; then
+  echo '{}' > /root/.claude/.claude.json
 fi
 
 # --- Install gmail-gtd dependencies if needed ---

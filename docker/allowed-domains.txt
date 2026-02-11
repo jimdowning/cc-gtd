@@ -9,7 +9,7 @@ statsig.anthropic.com
 api.trello.com
 api.todoist.com
 app.asana.com
-.googleapis.com
+www.googleapis.com
 accounts.google.com
 oauth2.googleapis.com
 
