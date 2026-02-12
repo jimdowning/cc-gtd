@@ -28,15 +28,16 @@ services:
         condition: service_healthy
     networks:
       - internal
+    user: "claude"
     read_only: true
     tmpfs:
       - /tmp:size=1g
       - /var/tmp:size=512m
-      - /root/.local/bin:size=1m
-      - /root/.local/share:size=1m
-      - /root/.npm:size=512m
-      - /root/.config:size=256m
-      - /root/.cache:size=256m
+      - /home/claude/.local/bin:size=1m,uid=1000,gid=1000
+      - /home/claude/.local/share:size=1m,uid=1000,gid=1000
+      - /home/claude/.npm:size=512m,uid=1000,gid=1000
+      - /home/claude/.config:size=256m,uid=1000,gid=1000
+      - /home/claude/.cache:size=256m,uid=1000,gid=1000
     stdin_open: true
     tty: true
     environment:
@@ -55,8 +56,8 @@ services:
       - ${CC_GTD_PATH:-..}:/workspace/cc-gtd
       - ${SYSTEMS_PATH:-../systems}:/workspace/cc-gtd/systems
       - ${GCALCLI_OAUTH_DIR:-~/.gcalcli}:/credentials/gcalcli:ro
-      - ~/.claude:/root/.claude
-      - ./container-settings.json:/root/.claude/settings.json:ro
+      - ~/.claude:/home/claude/.claude
+      - ./container-settings.json:/home/claude/.claude/settings.json:ro
       - ./claude-bin:/opt/claude:ro
       - ./trello-cli-bin:/opt/trello-cli:ro
       - ./entrypoint.sh:/entrypoint.sh:ro

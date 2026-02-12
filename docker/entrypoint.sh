@@ -1,33 +1,35 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+HOME="/home/claude"
+
 # --- Symlink claude to expected native install path ---
 # Claude Code detects installMethod=native and expects the binary at
-# /root/.local/bin/claude. Our binary is mounted at /opt/claude/claude.
-# /root/.local/bin is a tmpfs mount (writable); directory exists from image.
-if [ -x /opt/claude/claude ] && [ ! -e /root/.local/bin/claude ]; then
-  ln -s /opt/claude/claude /root/.local/bin/claude
+# ~/.local/bin/claude. Our binary is mounted at /opt/claude/claude.
+# ~/.local/bin is a tmpfs mount (writable); directory exists from image.
+if [ -x /opt/claude/claude ] && [ ! -e "$HOME/.local/bin/claude" ]; then
+  ln -s /opt/claude/claude "$HOME/.local/bin/claude"
 fi
 # --- Symlink trello-cli (self-contained .NET binary) ---
-if [ -x /opt/trello-cli/TrelloCli ] && [ ! -e /root/.local/bin/trello-cli ]; then
-  ln -s /opt/trello-cli/TrelloCli /root/.local/bin/trello-cli
+if [ -x /opt/trello-cli/TrelloCli ] && [ ! -e "$HOME/.local/bin/trello-cli" ]; then
+  ln -s /opt/trello-cli/TrelloCli "$HOME/.local/bin/trello-cli"
 fi
-export PATH="/root/.local/bin:$PATH"
+export PATH="$HOME/.local/bin:$PATH"
 
 # --- Seed .claude.json on the writable bind mount ---
-# /root/.claude.json is a symlink (from image) -> /root/.claude/.claude.json (bind mount)
-if [ ! -f /root/.claude/.claude.json ]; then
-  echo '{}' > /root/.claude/.claude.json
+# ~/.claude.json is a symlink (from image) -> ~/.claude/.claude.json (bind mount)
+if [ ! -f "$HOME/.claude/.claude.json" ]; then
+  echo '{}' > "$HOME/.claude/.claude.json"
 fi
 
 # --- Register Obsidian MCP bridge if configured ---
-# Write to the bind-mount path directly — /root/.claude.json is a symlink on the
+# Write to the bind-mount path directly — ~/.claude.json is a symlink on the
 # read-only root filesystem, so mv would fail trying to replace it.
 if [ -n "${OBSIDIAN_MCP_BRIDGE_URL:-}" ]; then
   jq --arg url "$OBSIDIAN_MCP_BRIDGE_URL" \
     '.mcpServers["obsidian-mcp-tools"] = {"type": "sse", "url": $url}' \
-    /root/.claude/.claude.json > /tmp/.claude.json.tmp && \
-    mv /tmp/.claude.json.tmp /root/.claude/.claude.json
+    "$HOME/.claude/.claude.json" > /tmp/.claude.json.tmp && \
+    mv /tmp/.claude.json.tmp "$HOME/.claude/.claude.json"
 fi
 
 # --- Install gmail-gtd dependencies if needed ---
@@ -38,9 +40,9 @@ if [ -d "$GMAIL_GTD_DIR" ] && [ -f "$GMAIL_GTD_DIR/package.json" ] && [ ! -d "$G
 fi
 
 # --- Provision gcalcli credentials (ro mount → writable tmpfs) ---
-# gcalcli stores oauth/cache in platformdirs.user_data_path = /root/.local/share/gcalcli
+# gcalcli stores oauth/cache in platformdirs.user_data_path = ~/.local/share/gcalcli
 GCALCLI_CREDS="/credentials/gcalcli"
-GCALCLI_RUNTIME="/root/.local/share/gcalcli"
+GCALCLI_RUNTIME="$HOME/.local/share/gcalcli"
 if [ -d "$GCALCLI_CREDS" ] && [ -f "$GCALCLI_CREDS/oauth" ]; then
   mkdir -p "$GCALCLI_RUNTIME"
   cp "$GCALCLI_CREDS"/* "$GCALCLI_RUNTIME/"

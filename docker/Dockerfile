@@ -18,23 +18,31 @@ RUN apt-get update && apt-get install -y --no-install-recommends ripgrep \
 # Layer 4: trello-cli is mounted from host as self-contained binary
 # See docker-compose.yml volume: ./trello-cli-bin:/opt/trello-cli:ro
 
-# Layer 5: Rust + tod (todoist CLI)
+# Layer 5: Rust + tod (todoist CLI) — installed as root, then copied
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && . /root/.cargo/env \
-    && cargo install tod
-ENV PATH="/root/.cargo/bin:${PATH}"
+    && cargo install tod \
+    && cp /root/.cargo/bin/tod /usr/local/bin/tod \
+    && rm -rf /root/.cargo /root/.rustup
 
 # Layer 6: gcalcli
 RUN pip3 install --break-system-packages gcalcli PySocks
 
+# Layer 7: Non-root user for Claude Code (--dangerously-skip-permissions
+# refuses to run as root)
+RUN useradd -m -s /bin/bash claude
+ENV HOME=/home/claude
+
 # Claude Code is installed on the host via host-install-claude.sh
 # and mounted read-only at /opt/claude
-ENV PATH="/root/.local/bin:/opt/claude:${PATH}"
+ENV PATH="/home/claude/.local/bin:/opt/claude:${PATH}"
 
 # Pre-create paths needed at runtime on the read-only root filesystem
 # .claude.json must be writable at runtime, so symlink it into the writable
 # .claude bind mount. The entrypoint seeds the actual file there.
-RUN mkdir -p /root/.local/bin && ln -s /root/.claude/.claude.json /root/.claude.json
+RUN mkdir -p /home/claude/.local/bin \
+    && ln -s /home/claude/.claude/.claude.json /home/claude/.claude.json \
+    && chown -R claude:claude /home/claude
 
 WORKDIR /workspace/cc-gtd
 
