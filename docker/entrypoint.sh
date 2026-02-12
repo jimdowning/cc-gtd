@@ -16,6 +16,16 @@ if [ ! -f /root/.claude/.claude.json ]; then
   echo '{}' > /root/.claude/.claude.json
 fi
 
+# --- Register Obsidian MCP bridge if configured ---
+# Write to the bind-mount path directly — /root/.claude.json is a symlink on the
+# read-only root filesystem, so mv would fail trying to replace it.
+if [ -n "${OBSIDIAN_MCP_BRIDGE_URL:-}" ]; then
+  jq --arg url "$OBSIDIAN_MCP_BRIDGE_URL" \
+    '.mcpServers["obsidian-mcp-tools"] = {"type": "sse", "url": $url}' \
+    /root/.claude/.claude.json > /tmp/.claude.json.tmp && \
+    mv /tmp/.claude.json.tmp /root/.claude/.claude.json
+fi
+
 # --- Install gmail-gtd dependencies if needed ---
 GMAIL_GTD_DIR="/workspace/cc-gtd/integrations/scripts/gmail-gtd"
 if [ -d "$GMAIL_GTD_DIR" ] && [ -f "$GMAIL_GTD_DIR/package.json" ] && [ ! -d "$GMAIL_GTD_DIR/node_modules" ]; then

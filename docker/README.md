@@ -16,18 +16,15 @@ Runs Claude Code inside a Docker container with a Squid proxy that restricts out
 │                            │     │                           │
 │  CLI tools + /opt/claude   │────>│  Squid (port 3128)        │──> Internet
 │  (read-only, host-verified)│     │  socat IMAP fwd (1993)    │   (allowlisted
-│  cc-gtd bind-mounted      │     │                           │    domains only)
-│  credentials (read-only)   │     │  allowed-domains.txt      │
-│                            │     │                           │
-│  NO direct internet        │     └──────────────────────────┘
-│  (internal network only)   │
-│                            │
-│  Obsidian MCP via ──────────────> host.docker.internal:8787
-│  host SSE bridge           │
+│  cc-gtd bind-mounted      │     │  socat MCP fwd (8787) ──────> host:8787
+│  credentials (read-only)   │     │                           │   (mcp-proxy)
+│                            │     │  allowed-domains.txt      │
+│  NO direct internet        │     │                           │
+│  (internal network only)   │     └──────────────────────────┘
 └────────────────────────────┘
 ```
 
-The framework container sits on an internal-only Docker network with no internet gateway. All HTTP/HTTPS traffic goes through the squid proxy, which only permits connections to domains listed in `allowed-domains.txt`. Gmail IMAP is forwarded via socat through the squid container.
+The framework container sits on an internal-only Docker network with no internet gateway. All HTTP/HTTPS traffic goes through the squid proxy, which only permits connections to domains listed in `allowed-domains.txt`. Gmail IMAP and the Obsidian MCP bridge are forwarded via socat through the squid container.
 
 ## Prerequisites
 
@@ -50,14 +47,14 @@ cd docker
 # Build both images (slow first time — compiles Rust)
 docker compose build
 
-# Start
-docker compose up -d
+# Start (bridge + containers)
+./up.sh
 
 # Attach to Claude Code interactively
 docker compose exec -it framework claude
 
-# When done
-docker compose down
+# When done (containers + bridge)
+./up.sh --down
 ```
 
 ## Environment variables
@@ -71,6 +68,7 @@ Set these in your shell or in `docker/.env`:
 | `CC_GTD_PATH` | No | `..` | Path to cc-gtd repo on host |
 | `SYSTEMS_PATH` | No | `../systems` | Path to systems directory on host |
 | `GCALCLI_OAUTH_DIR` | No | `~/.gcalcli` | Path to gcalcli OAuth credentials |
+| `OBSIDIAN_MCP_BRIDGE_URL` | No | `http://squid:8787/sse` | Obsidian MCP SSE endpoint (unset to disable) |
 
 ## Updating Claude Code
 
@@ -102,27 +100,39 @@ Notably excluded: `storage.googleapis.com` (Claude Code binary distribution) —
 
 ## Obsidian MCP access
 
-The Obsidian MCP server runs on the host. To make it accessible from inside the container, run an SSE bridge on the host:
+The Obsidian MCP server is a native macOS binary that can't run inside the Linux container. A host-side bridge exposes it as an SSE endpoint, and socat in the squid container forwards it to the framework — same pattern as IMAP.
+
+### Starting the bridge
 
 ```bash
-# On host — bridge the Obsidian MCP stdio server to SSE on port 8787
-npx supergateway --stdio "npx obsidian-mcp-tools" --port 8787
+# Reads config from ~/.claude.json automatically
+./start-obsidian-bridge.sh
+
+# Stop when done
+./start-obsidian-bridge.sh --stop
 ```
 
-Then configure Claude Code inside the container to use the SSE endpoint. Add to your MCP settings (`.claude/settings.json` or via `claude mcp add`):
+The `up.sh` wrapper starts the bridge automatically before `docker compose up`.
 
-```json
-{
-  "mcpServers": {
-    "obsidian": {
-      "type": "sse",
-      "url": "http://host.docker.internal:8787/sse"
-    }
-  }
-}
-```
+### How it works
 
-The `host.docker.internal` hostname is mapped to the host via `extra_hosts` in the compose file.
+1. **Host side**: `start-obsidian-bridge.sh` runs [`mcp-proxy`](https://github.com/punkpeye/mcp-proxy) which wraps the native Obsidian MCP binary as an SSE server on `127.0.0.1:8787`
+2. **Squid container**: socat forwards `squid:8787` to `host.docker.internal:8787` (same pattern as IMAP forwarding)
+3. **Framework container**: The entrypoint registers `http://squid:8787/sse` in `/root/.claude.json` (via `jq`) when `OBSIDIAN_MCP_BRIDGE_URL` is set
+4. **Credential isolation**: `OBSIDIAN_API_KEY` is read from `~/.claude.json` on the host and stays in the bridge process — it never enters the container
+5. **Network isolation preserved**: The framework remains on the internal-only network with no route to the host or internet
+
+### Configuration
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `OBSIDIAN_BRIDGE_PORT` | `8787` | Port for the SSE bridge on the host |
+| `OBSIDIAN_MCP_SERVER` | from `~/.claude.json` | Path to the MCP server binary (override) |
+| `OBSIDIAN_MCP_BRIDGE_URL` | `http://squid:8787/sse` | SSE endpoint URL passed to the container |
+
+### Graceful degradation
+
+If the bridge isn't running, Claude Code starts normally — the MCP server simply won't connect. To disable registration entirely, unset `OBSIDIAN_MCP_BRIDGE_URL` in your environment or `docker/.env`.
 
 ## Verifying the security boundary
 

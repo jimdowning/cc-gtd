@@ -11,6 +11,8 @@ services:
     networks:
       - internal
       - external
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "squidclient", "-h", "127.0.0.1", "-p", "3128", "mgr:info"]
       interval: 5s
@@ -26,8 +28,6 @@ services:
         condition: service_healthy
     networks:
       - internal
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     read_only: true
     tmpfs:
       - /tmp:size=1g
@@ -41,11 +41,12 @@ services:
     environment:
       - HTTP_PROXY=http://squid:3128
       - HTTPS_PROXY=http://squid:3128
-      - NO_PROXY=localhost,127.0.0.1,host.docker.internal
+      - NO_PROXY=localhost,127.0.0.1,squid
       - IMAP_HOST=squid
       - IMAP_PORT=1993
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ASANA_ACCESS_TOKEN=${ASANA_ACCESS_TOKEN:-}
+      - OBSIDIAN_MCP_BRIDGE_URL=${OBSIDIAN_MCP_BRIDGE_URL:-http://squid:8787/sse}
     volumes:
       - ${CC_GTD_PATH:-..}:/workspace/cc-gtd
       - ${SYSTEMS_PATH:-../systems}:/workspace/cc-gtd/systems
