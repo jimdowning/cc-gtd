@@ -33,7 +33,7 @@ The framework container sits on an internal-only Docker network with no internet
 - Run `./host-install-claude.sh` before first use (downloads and verifies Claude Code)
 - Credential files in place for the providers you use:
   - `~/.trello-cli/` — Trello CLI auth
-  - `~/.gcalcli/` (or set `GCALCLI_OAUTH_DIR`) — gcalcli OAuth tokens
+  - `GCALCLI_OAUTH_DIR` → gcalcli OAuth tokens (macOS default: `~/Library/Application Support/gcalcli`)
   - `integrations/scripts/gmail-gtd/<account>` — Gmail app passwords
 
 ## Quick start

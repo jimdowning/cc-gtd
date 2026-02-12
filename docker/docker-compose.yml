@@ -33,6 +33,7 @@ services:
       - /tmp:size=1g
       - /var/tmp:size=512m
       - /root/.local/bin:size=1m
+      - /root/.local/share:size=1m
       - /root/.npm:size=512m
       - /root/.config:size=256m
       - /root/.cache:size=256m

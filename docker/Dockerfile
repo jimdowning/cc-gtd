@@ -25,7 +25,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Layer 6: gcalcli
-RUN pip3 install --break-system-packages gcalcli
+RUN pip3 install --break-system-packages gcalcli PySocks
 
 # Claude Code is installed on the host via host-install-claude.sh
 # and mounted read-only at /opt/claude

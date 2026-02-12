@@ -37,6 +37,16 @@ if [ -d "$GMAIL_GTD_DIR" ] && [ -f "$GMAIL_GTD_DIR/package.json" ] && [ ! -d "$G
   (cd "$GMAIL_GTD_DIR" && npm ci --ignore-scripts)
 fi
 
+# --- Provision gcalcli credentials (ro mount → writable tmpfs) ---
+# gcalcli stores oauth/cache in platformdirs.user_data_path = /root/.local/share/gcalcli
+GCALCLI_CREDS="/credentials/gcalcli"
+GCALCLI_RUNTIME="/root/.local/share/gcalcli"
+if [ -d "$GCALCLI_CREDS" ] && [ -f "$GCALCLI_CREDS/oauth" ]; then
+  mkdir -p "$GCALCLI_RUNTIME"
+  cp "$GCALCLI_CREDS"/* "$GCALCLI_RUNTIME/"
+  chmod 600 "$GCALCLI_RUNTIME"/*
+fi
+
 # --- Log tool availability ---
 echo "--- Tool availability ---"
 for tool in node git jq rg trello-cli tod gcalcli claude; do

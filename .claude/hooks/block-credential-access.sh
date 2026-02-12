@@ -10,7 +10,7 @@ input=$(cat)
 command=$(echo "$input" | jq -r '.tool_input.command // ""')
 
 # Credential file paths (regex)
-CRED_PATHS='(/root/\.trello-cli|/credentials/gcalcli|integrations/scripts/gmail-gtd/[^/]+$)'
+CRED_PATHS='(/root/\.trello-cli|/credentials/gcalcli|/root/\.local/share/gcalcli|integrations/scripts/gmail-gtd/[^/]+$)'
 
 # Block: file-reading commands targeting credential paths
 if echo "$command" | grep -qE '(cat|less|head|tail|more|strings|xxd|od|base64)\s' && \
