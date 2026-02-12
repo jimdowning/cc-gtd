@@ -46,14 +46,17 @@ services:
       - IMAP_PORT=1993
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - ASANA_ACCESS_TOKEN=${ASANA_ACCESS_TOKEN:-}
+      - TRELLO_API_KEY=${TRELLO_API_KEY:-}
+      - TRELLO_TOKEN=${TRELLO_TOKEN:-}
+      - DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
       - OBSIDIAN_MCP_BRIDGE_URL=${OBSIDIAN_MCP_BRIDGE_URL:-http://squid:8787/sse}
     volumes:
       - ${CC_GTD_PATH:-..}:/workspace/cc-gtd
       - ${SYSTEMS_PATH:-../systems}:/workspace/cc-gtd/systems
-      - ~/.trello-cli:/root/.trello-cli:ro
       - ${GCALCLI_OAUTH_DIR:-~/.gcalcli}:/credentials/gcalcli:ro
       - ~/.claude:/root/.claude
       - ./container-settings.json:/root/.claude/settings.json:ro
       - ./claude-bin:/opt/claude:ro
+      - ./trello-cli-bin:/opt/trello-cli:ro
       - ./entrypoint.sh:/entrypoint.sh:ro
     working_dir: /workspace/cc-gtd

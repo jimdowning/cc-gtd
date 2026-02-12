@@ -8,6 +8,10 @@ set -euo pipefail
 if [ -x /opt/claude/claude ] && [ ! -e /root/.local/bin/claude ]; then
   ln -s /opt/claude/claude /root/.local/bin/claude
 fi
+# --- Symlink trello-cli (self-contained .NET binary) ---
+if [ -x /opt/trello-cli/TrelloCli ] && [ ! -e /root/.local/bin/trello-cli ]; then
+  ln -s /opt/trello-cli/TrelloCli /root/.local/bin/trello-cli
+fi
 export PATH="/root/.local/bin:$PATH"
 
 # --- Seed .claude.json on the writable bind mount ---
@@ -35,7 +39,7 @@ fi
 
 # --- Log tool availability ---
 echo "--- Tool availability ---"
-for tool in node git jq rg trello tod gcalcli claude; do
+for tool in node git jq rg trello-cli tod gcalcli claude; do
   if command -v "$tool" >/dev/null 2>&1; then
     version=$("$tool" --version 2>/dev/null | head -1 || echo "available")
     echo "  $tool: $version"

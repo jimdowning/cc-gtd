@@ -15,8 +15,8 @@ RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
 RUN apt-get update && apt-get install -y --no-install-recommends ripgrep \
     && rm -rf /var/lib/apt/lists/*
 
-# Layer 4: trello-cli (Node.js package)
-RUN npm install -g trello-cli
+# Layer 4: trello-cli is mounted from host as self-contained binary
+# See docker-compose.yml volume: ./trello-cli-bin:/opt/trello-cli:ro
 
 # Layer 5: Rust + tod (todoist CLI)
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \

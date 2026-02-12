@@ -12,6 +12,8 @@ systems/**/waiting-for.md
 *.local.md
 *.local.json
 *.local.env
+docker/.env
+docker/trello-cli-bin/
 reference/
 
 # Cache files
