@@ -167,7 +167,15 @@ The daily note has three top-level sections: Daily Plan (written by `/plan-day`)
 
 Show the draft. Ask if it looks right.
 
-Once confirmed, save to the system's journal. Only write the `# Daily Plan` section and the empty `# Notes` and `# Daily Review` stubs.
+Once confirmed, save to the system's journal.
+
+**Preserving existing content:** Before writing, read the current journal file (if it exists). The file may already contain user-written notes, a partial plan from an earlier run, or review content. When saving:
+
+1. **`# Notes` section**: If the existing file has content under `# Notes`, **preserve it verbatim**. Merge it into the `# Notes` section of the output. Never replace non-empty Notes with an empty stub.
+2. **`# Daily Review` section**: If the existing file has content under `# Daily Review`, **preserve it verbatim**. Never overwrite an existing review.
+3. **`# Daily Plan` section**: This is the section being written — replace it with the new plan.
+
+In short: only overwrite the `# Daily Plan` section. Carry forward everything else.
 
 **Extension hook: `after`** — Run any extensions declared for this hook after the plan is saved.
 

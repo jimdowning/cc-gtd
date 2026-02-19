@@ -66,7 +66,15 @@ Keep this short. This is a quick close-out, not a planning session.
 
 ### 5. Write Daily Review
 
-Append the `# Daily Review` section to today's journal note:
+Write the `# Daily Review` section to today's journal note.
+
+**Preserving existing content:** Before writing, read the current journal file. The `# Notes` section may contain user-written content. When saving:
+
+1. Read the existing file and extract the `# Daily Plan` and `# Notes` sections with their full content
+2. Preserve `# Daily Plan` and `# Notes` verbatim — never truncate, clear, or replace them
+3. Write/replace only the `# Daily Review` section
+
+Format:
 
 ```markdown
 # Daily Review

@@ -100,7 +100,13 @@ Example update:
 
 Show the updated plan. Confirm it makes sense.
 
-Save the updated plan to the system's journal, updating the `# Daily Plan` section. Preserve `# Notes` and `# Daily Review` sections untouched.
+Save the updated plan to the system's journal, updating the `# Daily Plan` section.
+
+**Preserving existing content:** Before writing, read the current journal file. The `# Notes` and `# Daily Review` sections may contain user-written content. When saving:
+
+1. Read the existing file and extract the `# Notes` and `# Daily Review` sections with their full content
+2. Write the updated `# Daily Plan` section
+3. Re-attach the original `# Notes` and `# Daily Review` content verbatim — never truncate, clear, or replace them
 
 ## Quick Mode
 
