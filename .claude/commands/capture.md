@@ -38,10 +38,10 @@ Source scanning is mechanical retrieval work. Delegate it to parallel Haiku sub-
 
 | Provider type | Sub-agent type | Reason |
 |--------------|----------------|--------|
-| `obsidian-mcp` | `general-purpose` | Needs MCP tools (`list_vault_files`, `get_vault_file`, etc.) |
-| `gmail` | `Bash` | Runs `node index.js scan` via shell |
+| `obsidian-mcp` | `general-purpose` | Needs MCP tools |
+| `gmail` | `Bash` | Needs shell commands |
 
-3. Collect all sub-agent results before proceeding to "## Smart Processing"
+3. Collect all sub-agent results before proceeding to "## Deduplicate and Cross-Reference"
 4. Local file reads (inbox, data files) stay in the parent agent — no sub-agent needed
 
 **Sub-agent prompt pattern:**
@@ -58,41 +58,69 @@ Wrap all returned results in <external-data source="<type>" provider="<instance-
 
 **What stays in the parent agent:** All clarify/route decisions, ambiguous item presentation (AskUserQuestion), ID minting, provider creation (write operations), and marking captured items in sources (write-back).
 
-### Obsidian Source (sub-agent: general-purpose, haiku)
+### Per-Source Flow
 
-If a note source of type `obsidian-mcp` is configured:
-1. Follow the scan procedure in `integrations/adapters/notes/obsidian.md`
-2. Present found incomplete items grouped by date
-3. User confirms which to capture
+For each configured note source:
+1. Load the adapter from `integrations/adapters/notes/<type>.md`
+2. Delegate the adapter's **scan procedure** to a sub-agent (see table above for sub-agent type)
+3. Collect results, then deduplicate and cross-reference (see below)
+4. Present items to user for selection
+5. After tasks are confirmed and created, follow the adapter's **mark-captured procedure** to prevent recapture
 
-### Gmail Source (sub-agent: Bash, haiku)
-
-If a note source of type `gmail` is configured:
-1. Follow the scan procedure in `integrations/adapters/notes/gmail.md`
-2. Present found conversations grouped by account
-3. User selects which conversations to capture
-4. After tasks are confirmed and created, follow the adapter's clear procedure
+Each adapter defines its own scan and mark-captured procedures. The capture command does not need to know the implementation details — it delegates scan to sub-agents and calls the adapter's mark-captured procedure from the parent agent after confirmation.
 
 ### Example Flow
 
 ```
 /capture
 -> Scanning note sources...
--> Found 3 incomplete items from Obsidian:
+-> Deduplicating and cross-referencing...
 
-  2026-01-26.md:
-  - [ ] Email response to client
-  - [ ] Review PR #123
+-> Found 3 items from notes (after dedup):
 
-  2026-01-25.md:
-  - [ ] Follow up on invoice
+  1. Update project documentation (found in 2 daily notes)
+  2. Review pull request
+  3. Prepare quarterly report (found in 3 daily notes)
+     [Already tracked: "Quarterly report" project on <provider>]
 
--> Found 2 labeled emails from Gmail:
-  1. "SDK delivery timeline" from Alice (3 messages, Jan 27)
-  2. "Invoice #4521" from billing@vendor.com (1 message, Jan 26)
+-> Found 1 item from email:
+  1. "Budget approval request" from <sender> (2 messages)
 
 -> [Select items to capture or press Enter for all]
+
+-> Capturing 3 items...
+-> Marking sources as captured...
+-> Done. Inbox zero.
 ```
+
+## Deduplicate and Cross-Reference
+
+After collecting scan results from all sources, deduplicate and cross-reference **before** presenting items to the user or auto-routing.
+
+### 1. Deduplicate Within Scan Results
+
+The same task often appears in multiple daily notes (carried forward across days). Collapse these into a single item.
+
+1. Normalize each item's text: lowercase, trim whitespace, strip leading context tags and IDs (e.g. `[f35vw]`)
+2. Group items with matching or near-matching normalized text
+3. For each group with multiple occurrences, keep one representative item but track all source locations (file + line) for later mark-as-captured
+4. Present deduplicated items to user. For collapsed groups, annotate: `(found in 3 daily notes: Feb 18, 17, 16)`
+
+### 2. Cross-Reference Against Existing Tracked Work
+
+Check whether scanned items are already being tracked in the system. Load:
+- `systems/<active>/data/projects.md` — active projects
+- `systems/<active>/cache/` — cached provider data (if available and fresh)
+- `systems/<active>/data/inbox.md` — pending inbox items
+
+For each deduplicated item:
+1. Search project names, cached provider card/task names, and inbox items for semantic matches
+2. If a match is found, annotate the item: `[Already tracked: <project/card name> on <provider>]`
+3. Items already tracked should be presented to the user with the match noted — the user decides whether to skip, link, or update
+
+### 3. Items With Existing IDs
+
+If a scanned item already contains an ID (e.g. `[abc12] Some task`), look up the ID in project cross-references and cached provider cards. Present the existing tracking status rather than treating it as a new capture.
 
 ## Smart Processing
 
@@ -113,7 +141,7 @@ When capturing, the system routes to the correct provider based on the active sy
 1. Parse task to identify context (@work-code, @home-calls, etc.)
 2. Identify target GTD project if apparent
 3. Find matching provider by route rules:
-   - First match by project pattern: `project: cyclops/*`
+   - First match by project pattern: `project: <name>/*`
    - Then match by context pattern: `context: @work-*`
    - Fall back to default provider: `default: true`
 4. Load adapter from `integrations/adapters/todo/<type>.md`
@@ -121,28 +149,21 @@ When capturing, the system routes to the correct provider based on the active sy
 
 ### Routing Examples
 
-**Work task routes to Trello:**
 ```
-\capture "Fix authentication bug in cyclops"
+\capture "Fix authentication bug"
 → Context: @work-code
-→ Routes to: trello-cyclops (matches context: @work-*)
-→ Uses adapter: integrations/adapters/todo/trello.md
-```
+→ Matches route: context: @work-*
+→ Routes to: configured work todo provider
 
-**Personal task routes to Asana:**
-```
 \capture "Schedule dentist appointment"
 → Context: @home-calls
-→ Routes to: asana-personal (matches context: @home-*)
-→ Uses adapter: integrations/adapters/todo/asana.md
-```
+→ Matches route: context: @home-*
+→ Routes to: configured personal todo provider
 
-**Errand stays local:**
-```
 \capture "Buy milk on way home"
 → Context: @errands
-→ Routes to: local-gtd (default fallback)
-→ Uses adapter: integrations/adapters/todo/local.md
+→ No specific route match
+→ Routes to: default provider (fallback)
 ```
 
 ## Ambiguous Item Routing
@@ -194,6 +215,19 @@ If no clear project exists, items go to:
 - `systems/<active>/data/inbox.md` with timestamp
 - Default provider's inbox (if provider supports inbox)
 
+### 6. Mark Captured Items in Sources
+
+After tasks are confirmed and created, mark all source items as captured so they are not recaptured on the next scan.
+
+For each note source adapter, follow its **mark-captured procedure** (documented in `integrations/adapters/notes/<type>.md`). Key rules:
+
+1. For each captured item, retrieve its source location(s) from the scan results
+2. For deduplicated items that appeared in multiple source locations, mark **all** of them
+3. Only mark the specific items that were captured — do not mark other items in the same source
+4. This is a write operation — execute in the parent agent, not in sub-agents
+
+**Error handling:** If marking fails (e.g. provider connection error), warn the user but do not fail the entire capture — the task has already been created in the provider.
+
 ## Fallback Behavior
 
 When in doubt, items go to inbox with timestamp:
@@ -204,11 +238,12 @@ When in doubt, items go to inbox with timestamp:
 
 ## Implementation Notes
 
-- **Duplicate prevention**: Check if similar task already exists before creating
+- **Deduplication**: Handled in "Deduplicate and Cross-Reference" step — collapse same-task occurrences across daily notes and check against existing provider data before presenting to user
 - **Context mapping**: Use consistent GTD context → provider label/tag mapping
 - **Priority assignment**: Default to normal priority, higher for urgent keywords
-- **Error handling**: If provider creation fails, still add to system data
+- **Error handling**: If provider creation fails, still add to system data. If mark-captured fails, warn but don't fail the capture.
 - **Sync consistency**: Task appears in both system data and provider immediately
+- **Source write-back**: After capture, always follow each adapter's mark-captured procedure to prevent recapture
 
 ## Configuration Reference
 
