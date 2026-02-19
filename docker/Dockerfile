@@ -9,7 +9,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Layer 2: Node.js 22 via NodeSource
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
     && apt-get install -y --no-install-recommends nodejs \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && npm install -g ccusage
 
 # Layer 3: ripgrep from apt (available for both amd64 and arm64)
 RUN apt-get update && apt-get install -y --no-install-recommends ripgrep \
