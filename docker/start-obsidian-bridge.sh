@@ -26,6 +26,14 @@ MCP_SERVER="${OBSIDIAN_MCP_SERVER:-$(jq -r --arg k "$MCP_KEY" '.mcpServers[$k].c
 OBSIDIAN_API_KEY="${OBSIDIAN_API_KEY:-$(jq -r --arg k "$MCP_KEY" '.mcpServers[$k].env.OBSIDIAN_API_KEY // empty' "$CLAUDE_JSON")}"
 export OBSIDIAN_API_KEY
 
+# Use HTTP mode if configured — needed when the target vault's HTTPS port
+# differs from the mcp-tools default (27124). The insecure HTTP port (27123)
+# is only bound to localhost so this is safe for local use.
+OBSIDIAN_USE_HTTP="${OBSIDIAN_USE_HTTP:-$(jq -r --arg k "$MCP_KEY" '.mcpServers[$k].env.OBSIDIAN_USE_HTTP // empty' "$CLAUDE_JSON")}"
+if [ -n "$OBSIDIAN_USE_HTTP" ]; then
+  export OBSIDIAN_USE_HTTP
+fi
+
 stop_bridge() {
   if [ -f "$PIDFILE" ]; then
     pid=$(cat "$PIDFILE")
