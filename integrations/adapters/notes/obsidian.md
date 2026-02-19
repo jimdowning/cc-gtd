@@ -219,6 +219,28 @@ Results:
 Total: 3 tasks ready to capture
 ```
 
+## Reconciliation
+
+When the processing pipeline scans Obsidian and finds uncaptured checkboxes, it must reconcile them against managed providers before presenting them to the user. This prevents completed tasks from resurfacing.
+
+### Procedure
+
+1. **Collect uncaptured items** from the scan (all `- [ ]` checkboxes)
+2. **For each item**, search for a matching task in managed provider Done/archived lists:
+   - Match by text similarity: compare checkbox text against card names in Trello Done lists (use the Trello cache `*-cards.json`, filter for Done list IDs)
+   - Match by cross-reference: if the checkbox text contains a task ID `[xxxxx]`, look up that ID in managed providers
+3. **If a match is found in Done/archived**:
+   - The task was completed externally. Mark the checkbox `[x]` in Obsidian using the "Mark Item as Captured" procedure
+   - Log: `Reconciled: "Task text" — completed in <provider>`
+   - Do NOT present this item to the user
+4. **If no match is found**: include the item in the normal Clarify/Organize flow
+
+### When to Run
+
+- During every processing pipeline execution (embedded in `/plan-day`, `/plan-week`, `/capture`)
+- After the Obsidian scan completes, before presenting items to the user
+- The parent agent runs this step (not delegated to Haiku sub-agents) because it involves cross-provider lookups and potential write-back
+
 ## Integration with /capture
 
 When `/capture` runs without arguments:

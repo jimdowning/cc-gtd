@@ -178,6 +178,48 @@ Note sources provide tasks captured organically in other tools (journaling apps,
 
 ---
 
+## Journal Provider Schema
+
+The journal provider tells commands where to read and write daily plans, weekly plans, and reviews. Without this, commands must guess at journal location.
+
+```yaml
+name: unique-instance-id
+type: local | obsidian
+# Type-specific config:
+daily_path: journal/daily/          # local: relative to system root
+weekly_path: journal/weekly/        # local: relative to system root
+daily_note_format: "YYYY-MM-DD.md"  # filename format for daily notes
+weekly_note_format: "YYYY-WNN-plan.md"  # filename format for weekly plans
+weekly_review_format: "YYYY-WNN-review.md"  # filename format for weekly reviews
+# Obsidian-specific (type: obsidian):
+vault_daily_folder: Journal/        # Obsidian vault path for daily notes
+vault_weekly_folder: Journal/       # Obsidian vault path for weekly plans
+```
+
+### Behaviour by Type
+
+**local** — Journal files live in `systems/<active>/journal/`. Commands use the Read/Write tools directly.
+
+**obsidian** — Journal files live in both the local system directory AND in the Obsidian vault. Commands write to both locations to keep them in sync. Reading prefers local (faster, not gitignored-tool-limited).
+
+### Example: Local + Obsidian Mirror
+```markdown
+### journal
+- **type**: local
+- **daily_path**: journal/daily/
+- **weekly_path**: journal/weekly/
+- **daily_note_format**: `YYYY-MM-DD.md`
+- **weekly_note_format**: `YYYY-WNN-plan.md`
+- **weekly_review_format**: `YYYY-WNN-review.md`
+- **obsidian_mirror**: true
+- **vault_daily_folder**: Journal/
+- **vault_weekly_folder**: Journal/
+```
+
+When `obsidian_mirror: true`, after writing a journal file locally, also write it to the Obsidian vault using the MCP tools. This keeps the Obsidian daily notes in sync without making Obsidian the primary storage.
+
+---
+
 ## Adding New Providers
 
 To add a new provider instance:

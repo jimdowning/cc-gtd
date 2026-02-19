@@ -15,6 +15,8 @@ A **system** is an independent work context (e.g., a job, personal life, side pr
 
 Each system is a separate git repo, cloned or symlinked into `systems/<name>/`.
 
+**Tool limitation:** The `systems/` directory is gitignored. The Glob and Grep tools respect `.gitignore` and will **silently return no results** for paths under `systems/`. Always use the Read tool (with an exact path) or `ls` via Bash to access system files. Never rely on Glob or Grep to discover files within a system.
+
 ### Active System
 
 Commands operate on the **active system**, stored in `.claude/active-system`. Set it with `/system <name>`. If only one system is mounted, it auto-selects.
@@ -27,7 +29,7 @@ Every command that needs provider config, data files, or system context follows 
 2. Load `systems/<active>/config.md` for provider instances and routing rules
 3. Use `systems/<active>/data/` for GTD data files (inbox, recurring, etc.)
 4. Check `systems/<active>/prompts/<command>.md` for system-specific command instructions — if present, load and follow those additional instructions
-5. Use `systems/<active>/journal/` for daily/weekly plans and reviews
+5. Read the `## Journal Provider` section from `systems/<active>/config.md` for journal paths and formats; use these to locate daily/weekly plans and reviews
 6. Use `systems/<active>/cache/` for cached provider data
 7. Load adapter from `integrations/adapters/<category>/<type>.md` for provider operations
 
@@ -66,8 +68,9 @@ See each adapter's `## Role` section for its specific metadata.
 | Waiting For | `systems/<active>/data/waiting-for.md` |
 | Projects | `systems/<active>/data/projects.md` |
 | Command prompts | `systems/<active>/prompts/<command>.md` |
-| Daily journal | `systems/<active>/journal/daily/` |
-| Weekly plans | `systems/<active>/journal/weekly/` |
+| Journal config | `systems/<active>/config.md` → `## Journal Provider` |
+| Daily journal | `systems/<active>/<daily_path>` (from journal provider) |
+| Weekly plans | `systems/<active>/<weekly_path>` (from journal provider) |
 | Provider cache | `systems/<active>/cache/` |
 | Reference docs | `systems/<active>/reference/` |
 | Adapter docs | `integrations/adapters/<category>/<type>.md` |
@@ -82,7 +85,8 @@ See each adapter's `## Role` section for its specific metadata.
 | Config schema | `integrations/config.md` | Shared engine |
 | Provider instances | `systems/<name>/config.md` | Per-system |
 | Task data files | `systems/<name>/data/` | Per-system |
-| Journal files | `systems/<name>/journal/` | Per-system |
+| Journal config | `systems/<name>/config.md` | Per-system (journal provider section) |
+| Journal files | `systems/<name>/journal/` | Per-system (paths from journal provider) |
 | Board structures | `systems/<name>/reference/` | Per-system |
 | Command overrides | `systems/<name>/prompts/` | Per-system |
 | User identity | `CLAUDE.local.md` | User-specific, not system-specific |
@@ -118,9 +122,19 @@ Three stages move raw inputs into the system. Together, they achieve **inbox zer
 - Reference: non-actionable information
 - Route to appropriate provider based on context
 
-**Clear-cut items** (obvious single action, unambiguous context) are auto-routed silently. **Ambiguous items** (unclear category, uncertain priority, could go multiple ways) are presented to the user for a quick decision. The agent should never guess on categorisation or prioritisation — when in doubt, ask. 
+**Clear-cut items** (obvious single action, unambiguous context) are auto-routed silently. **Ambiguous items** (unclear category, uncertain priority, could go multiple ways) are presented to the user for a quick decision. The agent should never guess on categorisation or prioritisation — when in doubt, ask.
 
 Clarify and Organize run together for each item. The inbox is a transient buffer, not a storage location. **When the pipeline completes, the inbox is empty.**
+
+**Reconcile** — Cross-reference capture sources against managed providers
+
+After Capture scans a source (e.g., Obsidian checkboxes), but before presenting items to the user, reconcile against completion signals from managed providers:
+
+1. For each uncaptured item from a capture source, check if a matching task exists in a managed provider's Done/archived state (match by text similarity or cross-reference ID)
+2. If a match is found: the task was completed externally. **Auto-mark the source** (e.g., check the Obsidian checkbox) and skip the item silently. Do not present it to the user.
+3. If no match: proceed with normal Clarify/Organize flow.
+
+This prevents completed tasks from resurfacing on every scan when the completion happened in a managed provider (e.g., Trello) but the capture source (e.g., Obsidian checkbox) was never updated. See the Obsidian adapter's "Reconciliation" section for the detailed procedure.
 
 The processing pipeline runs as the Observe step of `/plan-day` and `/plan-week` — the user never needs to manually process the inbox before planning. `/capture` remains for quick single-item capture at any time.
 
@@ -286,9 +300,12 @@ All tasks should be assigned a unique 5-character alphanumeric identifier for ea
 - **Examples**: `x7k2m`, `a9f3q`, `p4w8n`
 
 ### When to Assign Identifiers
-- When collecting tasks from external providers (Trello, Asana, Todoist)
+
+**Every task shown to the user MUST have an identifier.** No exceptions. If a task doesn't already have one, mint an ID before presenting it.
+
+- When collecting tasks from external providers (Trello, Asana, Todoist) — if the card/task name doesn't start with `[xxxxx]`, mint an ID and prepend it to the card name via the provider's update API
 - When creating new tasks via /capture
-- When presenting task lists to the user
+- When presenting task lists to the user — never show a task without an ID
 - When saving tasks to GTD files or memory
 
 ### Generating Identifiers
