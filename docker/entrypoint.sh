@@ -49,6 +49,11 @@ if [ -d "$GCALCLI_CREDS" ] && [ -f "$GCALCLI_CREDS/oauth" ]; then
   chmod 600 "$GCALCLI_RUNTIME"/*
 fi
 
+# --- Provision git config (persistent bind mount) ---
+if [ -f "$HOME/.claude/gitconfig" ]; then
+  export GIT_CONFIG_GLOBAL="$HOME/.claude/gitconfig"
+fi
+
 # --- Log tool availability ---
 echo "--- Tool availability ---"
 for tool in node git jq rg trello-cli tod gcalcli claude; do
