@@ -138,9 +138,9 @@ The daily note has three top-level sections: Daily Plan (written by `/plan-day`)
 | ... | ... | ... |
 
 ## Top 3 Priorities
-1. Priority task
-2. Priority task
-3. Priority task
+1. [id] Priority task
+2. [id] Priority task
+3. [id] Priority task
 
 ## Time Blocks
 - **08:15-09:30** Focus Block
@@ -148,9 +148,6 @@ The daily note has three top-level sections: Daily Plan (written by `/plan-day`)
 - **10:00-11:30** Deep Work
   - [ ] [id] Task from conversation
 - ...
-
-## Updates
-- Items deferred, priorities changed, etc.
 
 ---
 
@@ -162,6 +159,15 @@ The daily note has three top-level sections: Daily Plan (written by `/plan-day`)
 # Daily Review
 
 ```
+
+**Journal content rules** (see `integrations/config.md` → Journal Provider → Content Rules):
+
+- **No `## Updates` section.** Status changes (due dates, completions, deferrals) should be made directly in the provider (e.g., update Trello card). Do not narrate provider changes in the journal — it creates capturable noise that resurfaces on every scan.
+- **Only `- [ ]` for today's active tasks.** Unchecked checkboxes in time blocks represent "I intend to do this today."
+- Task IDs are fine in priorities and time blocks — they help identify the work. What to avoid is **informational notes about task status** (e.g., "pushed to Mar 9", "done", "deferred") written as bare text. These become phantom capturable items.
+- **Priorities use numbered lists**, not checkboxes — these are descriptive headings, not capturable items.
+
+When the user makes decisions during the Orient/Decide conversation (e.g., "push X to next week", "drop Y"), **execute the decision in the provider** (move the Trello card, update the due date) rather than noting it in the journal.
 
 ### 8. Confirm and Save
 

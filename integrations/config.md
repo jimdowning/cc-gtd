@@ -152,7 +152,7 @@ routes:
 
 ## Note Source Schema
 
-Note sources provide tasks captured organically in other tools (journaling apps, note-taking apps, email). These are scanned during `/capture` to surface tasks for formalization into the GTD system.
+Note sources provide tasks captured organically in other tools (journaling apps, note-taking apps). These are scanned during `/capture` to surface tasks for formalization into the GTD system.
 
 ### Obsidian (MCP)
 ```markdown
@@ -164,16 +164,6 @@ Note sources provide tasks captured organically in other tools (journaling apps,
 - **mark_captured**: true
 - **mcp_server**: obsidian-mcp-tools
 - **description**: Scan daily notes for incomplete checkbox items
-```
-
-### Gmail (IMAP)
-```markdown
-### gmail-work
-- **type**: gmail
-- **account**: your-email@example.com
-- **auth**: integrations/scripts/gmail-gtd/your-email@example.com
-- **label**: gtd
-- **description**: Scan Gmail for emails labeled 'gtd'
 ```
 
 ---
@@ -217,6 +207,43 @@ vault_weekly_folder: Journal/       # Obsidian vault path for weekly plans
 ```
 
 When `obsidian_mirror: true`, after writing a journal file locally, also write it to the Obsidian vault using the MCP tools. This keeps the Obsidian daily notes in sync without making Obsidian the primary storage.
+
+### Content Rules
+
+Journal notes are scanned by the capture pipeline (Obsidian adapter). Every unchecked checkbox (`- [ ]`) is treated as a potential task to capture. This means journal content must be written carefully to avoid creating noise that resurfaces on every scan.
+
+**Rule 1: Act in providers, don't narrate in the journal.**
+When a task's status changes (due date moved, completed, deferred), make the change in the provider (update Trello card due date, move card to Done, etc.). Do NOT write a journal note describing the change — that creates a text fragment that the scanner may pick up as a new item.
+
+Bad: `- [ab12c] Migration project — due date pushed to Mar 9` (bare text, re-capturable)
+Good: Update the Trello card's due date to Mar 9. Omit from journal entirely.
+
+Bad: `- [xy34z] Review vendor agreement — done` (bare text, re-capturable)
+Good: Ensure the Trello card is in the Done column. Omit from journal entirely.
+
+**Rule 2: Only `- [ ]` for today's active work.**
+Unchecked checkboxes (`- [ ]`) should only appear in **today's** daily plan for tasks that are actively being worked on today. They represent "I intend to do this today."
+
+**Rule 3: All task references in past days must be `- [x]`.**
+Once a day is over, every checkbox in that day's journal should be checked (`- [x]`). Whether the task was completed, deferred, or dropped — the checkbox is checked because it has been **dealt with** (processed, not necessarily done). This prevents the capture scanner from re-surfacing old items.
+
+**Rule 4: No bare task-ID text outside checkboxes.**
+Never write task IDs (`[xxxxx]`) in free text, bullet points, or update notes. If a task needs to appear in the journal, it must be in checkbox format. If it doesn't need to appear (status change handled in provider), omit it.
+
+**Rule 5: The `## Top 3 Priorities` section uses numbered lists, not checkboxes.**
+These are descriptive headings for the day's focus, not capturable items. They reference tasks but are not themselves tasks. This format is safe from the scanner.
+
+**What belongs in journal notes:**
+- Calendar (table format — not capturable)
+- Top 3 priorities (numbered list — not capturable)
+- Time blocks with checkboxes for today's tasks
+- User-written notes and reflections (free text under `# Notes`)
+- Daily review with checked checkboxes
+
+**What does NOT belong in journal notes:**
+- Status updates about provider changes ("pushed to...", "moved to...", "done")
+- Informational notes that reference task IDs without checkboxes
+- Unchecked checkboxes for tasks not being worked on today
 
 ---
 

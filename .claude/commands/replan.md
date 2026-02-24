@@ -87,14 +87,13 @@ Example update:
 - **16:00-17:00** Wind down
   - [ ] [qfo2w] Review items if time
 
-### Pushed to Tomorrow
-- [ ] [l4alt] Task — deprioritized, will continue tomorrow
-
 ### Morning (completed)
 - [x] [5e1lv] Done task
 - **09:30-10:00** Meeting — done
 - **10:00-11:30** Deep work — worked on X
 ```
+
+**Journal content rules:** Do not include a "Pushed to Tomorrow" section — it creates capturable items in past journal entries. Instead, simply omit deferred tasks from the remaining time blocks. The task still exists in its provider (Trello card, etc.) and will naturally appear as a candidate in tomorrow's `/plan-day`. If a due date needs to change, update the provider directly.
 
 ### 6. Confirm and Save
 

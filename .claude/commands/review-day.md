@@ -85,12 +85,14 @@ Format:
 - [x] [r3k9m] Task E (unplanned)
 
 ## Incomplete → Carry Forward
-- [ ] [l4alt] Task C
-- [ ] [qfo2w] Task D
+- [x] [l4alt] Task C → carry forward
+- [x] [qfo2w] Task D → carry forward
 
 ## Notes
 <!-- User's reflections from the conversation -->
 ```
+
+**Important: All checkboxes in the review must be `[x]`.** The review is a historical record — every item has been dealt with (completed, deferred, or dropped). Using `- [ ]` would cause the capture scanner to re-surface these items from past journal entries. Mark carry-forward items as `[x]` with a "→ carry forward" annotation to distinguish them from completed items.
 
 **Extension hook: `after`** — Run any extensions declared for this hook after the review is written.
 
