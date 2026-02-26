@@ -2,7 +2,7 @@ FROM debian:bookworm-slim
 
 # Layer 1: System packages (most stable)
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl git jq bash coreutils procps python3 python3-pip \
+    ca-certificates curl git jq bash coreutils procps python3 python3-pip sqlite3 \
     build-essential pkg-config libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
@@ -43,6 +43,7 @@ ENV PATH="/home/claude/.local/bin:/opt/claude:${PATH}"
 # .claude bind mount. The entrypoint seeds the actual file there.
 RUN mkdir -p /home/claude/.local/bin \
     && ln -s /home/claude/.claude/.claude.json /home/claude/.claude.json \
+    && echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/claude/.bashrc \
     && chown -R claude:claude /home/claude
 
 WORKDIR /workspace/cc-gtd

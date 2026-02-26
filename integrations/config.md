@@ -168,6 +168,23 @@ Note sources provide tasks captured organically in other tools (journaling apps,
 
 ---
 
+## Messaging Source Schema
+
+Messaging sources provide read-only context from archived team communication. Scanned during Orient phase to surface conversations, requests, and missed messages.
+
+### Slackdump (SQLite)
+```markdown
+### slackdump
+- **type**: slackdump
+- **db_path**: path to SQLite database (relative to system root)
+- **user_match**: display name or real name to identify user in Slack records
+- **scan_hours**: 24 (default, how far back to scan)
+- **excluded_channels**: (optional list of channel names to skip)
+- **description**: Scan Slack archive for conversations, requests, and missed messages
+```
+
+---
+
 ## Journal Provider Schema
 
 The journal provider tells commands where to read and write daily plans, weekly plans, and reviews. Without this, commands must guess at journal location.
