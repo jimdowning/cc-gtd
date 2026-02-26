@@ -77,6 +77,21 @@ json_extract(CAST(M.DATA AS TEXT), '$.user')
 - **Thread children**: `PARENT_ID` links to parent's `ID`, `THREAD_TS` = parent's `TS`
 - **Regular messages**: `IS_PARENT = 0` and `PARENT_ID IS NULL`
 
+### Author Display Name Resolution
+
+The `USERNAME` field is often a Slack handle (e.g., `mail`) that doesn't match the person's real name. **Always prefer display_name or real_name** from the user's DATA JSON blob:
+
+```sql
+COALESCE(
+  NULLIF(json_extract(CAST(U.DATA AS TEXT), '$.profile.display_name'), ''),
+  json_extract(CAST(U.DATA AS TEXT), '$.real_name'),
+  U.USERNAME,
+  R.user_id
+) as author
+```
+
+This pattern is used in all queries below.
+
 ## Commands
 
 All commands use the database at `systems/<active>/{{db_path}}`. Variable `{{DB}}` below refers to this full path.
@@ -127,7 +142,12 @@ active_channels AS (
 SELECT
   C.NAME as channel,
   datetime(CAST(substr(R.TS, 1, instr(R.TS,'.')-1) AS INTEGER), 'unixepoch') as dt,
-  COALESCE(U.USERNAME, R.user_id) as author,
+  COALESCE(
+    NULLIF(json_extract(CAST(U.DATA AS TEXT), '$.profile.display_name'), ''),
+    json_extract(CAST(U.DATA AS TEXT), '$.real_name'),
+    U.USERNAME,
+    R.user_id
+  ) as author,
   CASE WHEN R.IS_PARENT = 1 THEN '[thread]' WHEN R.PARENT_ID IS NOT NULL THEN '[reply]' ELSE '' END as thread_type,
   substr(R.TXT, 1, 200) as message
 FROM recent_msgs R
@@ -170,7 +190,12 @@ dm_channels AS (
 SELECT
   C.NAME as channel,
   datetime(CAST(substr(R.TS, 1, instr(R.TS,'.')-1) AS INTEGER), 'unixepoch') as dt,
-  COALESCE(U.USERNAME, R.user_id) as author,
+  COALESCE(
+    NULLIF(json_extract(CAST(U.DATA AS TEXT), '$.profile.display_name'), ''),
+    json_extract(CAST(U.DATA AS TEXT), '$.real_name'),
+    U.USERNAME,
+    R.user_id
+  ) as author,
   substr(R.TXT, 1, 200) as message,
   CASE
     WHEN R.TXT LIKE '%<@{{USER_ID}}>%' THEN '@mention'
@@ -220,7 +245,12 @@ dm_channels AS (
 unanswered_dms AS (
   SELECT R.*,
     C.NAME as channel_name,
-    COALESCE(U.USERNAME, R.user_id) as author_name
+    COALESCE(
+      NULLIF(json_extract(CAST(U.DATA AS TEXT), '$.profile.display_name'), ''),
+      json_extract(CAST(U.DATA AS TEXT), '$.real_name'),
+      U.USERNAME,
+      R.user_id
+    ) as author_name
   FROM recent_msgs R
   JOIN deduped_chan C ON C.ID = R.CHANNEL_ID
   LEFT JOIN deduped_user U ON U.ID = R.user_id
@@ -233,11 +263,16 @@ unanswered_dms AS (
         AND R2.TS > R.TS
     )
 ),
--- Threads with @mention but no user reply after
+-- @mentions with no user reply after (checks thread, same-channel reply, or any later message in channel)
 unanswered_mentions AS (
   SELECT R.*,
     C.NAME as channel_name,
-    COALESCE(U.USERNAME, R.user_id) as author_name
+    COALESCE(
+      NULLIF(json_extract(CAST(U.DATA AS TEXT), '$.profile.display_name'), ''),
+      json_extract(CAST(U.DATA AS TEXT), '$.real_name'),
+      U.USERNAME,
+      R.user_id
+    ) as author_name
   FROM recent_msgs R
   JOIN deduped_chan C ON C.ID = R.CHANNEL_ID
   LEFT JOIN deduped_user U ON U.ID = R.user_id
@@ -248,8 +283,12 @@ unanswered_mentions AS (
       WHERE R2.user_id = '{{USER_ID}}'
         AND R2.TS > R.TS
         AND (
+          -- Reply in same thread
           (R.THREAD_TS IS NOT NULL AND R2.THREAD_TS = R.THREAD_TS)
-          OR (R.THREAD_TS IS NULL AND R2.CHANNEL_ID = R.CHANNEL_ID AND R2.THREAD_TS = R.TS)
+          -- Reply starting a thread on the mention
+          OR (R.THREAD_TS IS NULL AND R2.THREAD_TS = R.TS)
+          -- Top-level reply in same channel (covers non-threaded back-and-forth)
+          OR (R.THREAD_TS IS NULL AND R2.CHANNEL_ID = R.CHANNEL_ID AND R2.THREAD_TS IS NULL)
         )
     )
 )
